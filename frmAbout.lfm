@@ -1,0 +1,80 @@
+object AboutForm: TAboutForm
+  Left = 401
+  Height = 208
+  Top = 344
+  Width = 319
+  BorderIcons = [biSystemMenu]
+  BorderStyle = bsDialog
+  Caption = 'Πληροφορίες ανάπτυξης'
+  ClientHeight = 208
+  ClientWidth = 319
+  Color = clBtnFace
+  DesignTimePPI = 168
+  Font.Color = clWindowText
+  Font.Height = -16
+  Font.Name = 'Tahoma'
+  Position = poScreenCenter
+  LCLVersion = '1.8.0.6'
+  object btnOk: TButton
+    Left = 122
+    Height = 25
+    Top = 176
+    Width = 75
+    Caption = 'OK'
+    Default = True
+    ModalResult = 1
+    TabOrder = 0
+  end
+  object Panel1: TPanel
+    Left = 7
+    Height = 161
+    Top = 8
+    Width = 305
+    BevelInner = bvRaised
+    BevelOuter = bvLowered
+    ClientHeight = 161
+    ClientWidth = 305
+    Font.CharSet = GREEK_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -16
+    Font.Name = 'Arial'
+    Font.Style = [fsBold]
+    ParentFont = False
+    TabOrder = 1
+    object Label1: TLabel
+      Left = 65
+      Height = 19
+      Top = 21
+      Width = 170
+      Alignment = taCenter
+      Caption = 'Μορφοποίηση κώδικα'
+      ParentColor = False
+    end
+    object Label2: TLabel
+      Left = 66
+      Height = 19
+      Top = 53
+      Width = 168
+      Alignment = taCenter
+      Caption = 'Από το Νίκο Γεωργίου'
+      ParentColor = False
+    end
+    object Label3: TLabel
+      Left = 99
+      Height = 19
+      Top = 85
+      Width = 102
+      Alignment = taCenter
+      Caption = 'Έκδοση 1.2.0'
+      ParentColor = False
+    end
+    object Label4: TLabel
+      Left = 49
+      Height = 19
+      Top = 117
+      Width = 202
+      Caption = 'ngeor@softlab.ece.ntua.gr'
+      ParentColor = False
+    end
+  end
+end
