@@ -1,43 +1,45 @@
-unit CppLexer;
+
+Unit CppLexer;
 
 {$MODE Delphi}
 
-interface
+Interface
 
-uses SysUtils, Classes, LexerBase;
+Uses SysUtils, Classes, LexerBase;
 
-type
-  TCppLexer = class(TLexerBase)
-  private
-    procedure HandleString;
-    procedure HandleIdentifier;
-    procedure HandlePreProcessorDirective;
-    procedure HandleSymbol;
-  protected
-    procedure Scan; override;
-  end;
+Type 
+  TCppLexer = Class(TLexerBase)
+    Private 
+      Procedure HandleString;
+      Procedure HandleIdentifier;
+      Procedure HandlePreProcessorDirective;
+      Procedure HandleSymbol;
+    Protected 
+      Procedure Scan;
+      override;
+  End;
 
-implementation
+Implementation
 
-uses TokenTypes;
+Uses TokenTypes;
 
-const
-  CppKeyWords: array [0..59] of string =
-    ('_cs', '_ds', '_es', '_export', '_fastcall',
-    '_loadds', '_saveregs', '_seg', '_ss', 'asm',
-    'auto', 'break', 'case', 'cdecl', 'char',
-    'class', 'const', 'continue', 'default', 'delete',
-    'do', 'double', 'else', 'enum', 'extern',
-    'far', 'float', 'for', 'friend', 'goto',
-    'huge', 'if', 'inline', 'int', 'interrupt',
-    'long', 'near', 'new', 'operator', 'pascal',
-    'private', 'protected', 'public', 'register', 'return',
-    'short', 'signed', 'sizeof', 'static', 'struct',
-    'switch', 'template', 'this', 'typedef', 'union',
-    'unsigned', 'virtual', 'void', 'volatile', 'while');
+Const 
+  CppKeyWords: array [0..59] Of string = 
+                                         ('_cs', '_ds', '_es', '_export', '_fastcall',
+                                          '_loadds', '_saveregs', '_seg', '_ss', 'asm',
+                                          'auto', 'break', 'case', 'cdecl', 'char',
+                                          'class', 'const', 'continue', 'default', 'delete',
+                                          'do', 'double', 'else', 'enum', 'extern',
+                                          'far', 'float', 'for', 'friend', 'goto',
+                                          'huge', 'if', 'inline', 'int', 'interrupt',
+                                          'long', 'near', 'new', 'operator', 'pascal',
+                                          'private', 'protected', 'public', 'register', 'return',
+                                          'short', 'signed', 'sizeof', 'static', 'struct',
+                                          'switch', 'template', 'this', 'typedef', 'union',
+                                          'unsigned', 'virtual', 'void', 'volatile', 'while');
 
-procedure TCppLexer.Scan;
-begin
+Procedure TCppLexer.Scan;
+Begin
   HandleCRLF(StreamTokenizer, TokenFound);
   HandleSpace(StreamTokenizer, TokenFound);
   HandleSlashesComment(StreamTokenizer, TokenFound);
@@ -45,71 +47,73 @@ begin
   HandleIdentifier;
   HandlePreProcessorDirective;
   HandleSymbol;
-end;
+End;
 
-procedure TCppLexer.HandleString;
-begin
-  if StreamTokenizer.Current = '"' then
-  begin
-    StreamTokenizer.Next;
-    while (not StreamTokenizer.IsEof) and (StreamTokenizer.Current <> '"') do
+Procedure TCppLexer.HandleString;
+Begin
+  If StreamTokenizer.Current = '"' Then
+    Begin
       StreamTokenizer.Next;
+      While (Not StreamTokenizer.IsEof) And (StreamTokenizer.Current <> '"') Do
+        StreamTokenizer.Next;
 
-    StreamTokenizer.Next;
-    CurrentTokenFound(ttString);
-  end;
-end;
+      StreamTokenizer.Next;
+      CurrentTokenFound(ttString);
+    End;
+End;
 
-function ArrayContains(hay: array of string; needle: string): boolean;
-var
+Function ArrayContains(hay: Array Of String; needle: String): boolean;
+
+Var 
   i: integer;
-begin
+Begin
   Result := False;
 
-  for i := Low(hay) to High(hay) do
-    if hay[i] = needle then
-    begin
-      Result := True;
-      break;
-    end;
-end;
+  For i := Low(hay) To High(hay) Do
+    If hay[i] = needle Then
+      Begin
+        Result := True;
+        break;
+      End;
+End;
 
-procedure TCppLexer.HandleIdentifier;
-var
+Procedure TCppLexer.HandleIdentifier;
+
+Var 
   token: string;
   tokenType: TTokenType;
-begin
-  if StreamTokenizer.Scan(['a'..'z', 'A'..'Z'], ['a'..'z', 'A'..'Z', '_']) then
-  begin
-    token := StreamTokenizer.TokenAndMark;
+Begin
+  If StreamTokenizer.Scan(['a'..'z', 'A'..'Z'], ['a'..'z', 'A'..'Z', '_']) Then
+    Begin
+      token := StreamTokenizer.TokenAndMark;
 
-    if ArrayContains(CppKeyWords, token) then
-      tokenType := ttKeyWord
-    else
-      tokenType := ttIdentifier;
+      If ArrayContains(CppKeyWords, token) Then
+        tokenType := ttKeyWord
+      Else
+        tokenType := ttIdentifier;
 
-    TokenFound(token, tokenType);
-  end;
-end;
+      TokenFound(token, tokenType);
+    End;
+End;
 
-procedure TCppLexer.HandlePreProcessorDirective;
-begin
-  if StreamTokenizer.Current = '#' then
-  begin
-    while (not StreamTokenizer.IsEof) and (not StreamTokenizer.IsEoln) do
+Procedure TCppLexer.HandlePreProcessorDirective;
+Begin
+  If StreamTokenizer.Current = '#' Then
+    Begin
+      While (Not StreamTokenizer.IsEof) And (Not StreamTokenizer.IsEoln) Do
+        StreamTokenizer.Next;
+
+      CurrentTokenFound(ttPreProcessor);
+    End;
+End;
+
+Procedure TCppLexer.HandleSymbol;
+Begin
+  If StreamTokenizer.Current In ['(', ')', ';', '{', '}', '[', ']'] Then
+    Begin
       StreamTokenizer.Next;
+      CurrentTokenFound(ttSymbol);
+    End;
+End;
 
-    CurrentTokenFound(ttPreProcessor);
-  end;
-end;
-
-procedure TCppLexer.HandleSymbol;
-begin
-  if StreamTokenizer.Current in ['(', ')', ';', '{', '}', '[', ']'] then
-  begin
-    StreamTokenizer.Next;
-    CurrentTokenFound(ttSymbol);
-  end;
-end;
-
-end.
+End.

@@ -1,19 +1,20 @@
-unit frmMain;
+
+Unit frmMain;
 
 {$MODE Delphi}
 
-interface
+Interface
 
-uses
-  LCLIntf, LCLType, SysUtils, Classes, Graphics, Controls,
-  Forms, Dialogs, ComCtrls, Buttons, ExtCtrls, Menus,
-  IpHtml,
-  Factory;
+Uses 
+LCLIntf, LCLType, SysUtils, Classes, Graphics, Controls,
+Forms, Dialogs, ComCtrls, Buttons, ExtCtrls, Menus,
+IpHtml,
+Factory;
 
-type
+Type 
   { TMainForm }
 
-  TMainForm = class(TForm)
+  TMainForm = Class(TForm)
     IpHtmlPanel1: TIpHtmlPanel;
     OpenDialog1: TOpenDialog;
     SaveDialog1: TSaveDialog;
@@ -31,164 +32,171 @@ type
     btnFileOpen: TToolButton;
     btnFileSave: TToolButton;
     StatusBar1: TStatusBar;
-    procedure FileOpenClick(Sender: TObject);
-    procedure FileExitClick(Sender: TObject);
-    procedure ToolsPrefClick(Sender: TObject);
-    procedure HelpAboutClick(Sender: TObject);
-    procedure FileSaveAsClick(Sender: TObject);
-    procedure FormCreate(Sender: TObject);
-    procedure SaveDialog1TypeChange(Sender: TObject);
-  private
-    FDocType: TDocumentType;
-    FCurFileName: string;
-    procedure SetDocType(Value: TDocumentType);
-    procedure SetCurFileName(const Value: string);
-    procedure OpenFile(const FileName: string; aDocType: TDocumentType); overload;
-    property DocType: TDocumentType read FDocType write SetDocType;
-    property CurFileName: string read FCurFileName write SetCurFileName;
-  public
-    procedure OpenFile(const FileName: string); overload;
-  end;
+    Procedure FileOpenClick(Sender: TObject);
+    Procedure FileExitClick(Sender: TObject);
+    Procedure ToolsPrefClick(Sender: TObject);
+    Procedure HelpAboutClick(Sender: TObject);
+    Procedure FileSaveAsClick(Sender: TObject);
+    Procedure FormCreate(Sender: TObject);
+    Procedure SaveDialog1TypeChange(Sender: TObject);
+    Private 
+      FDocType: TDocumentType;
+      FCurFileName: string;
+      Procedure SetDocType(Value: TDocumentType);
+      Procedure SetCurFileName(Const Value: String);
+      Procedure OpenFile(Const FileName: String; aDocType: TDocumentType);
+      overload;
+      property DocType: TDocumentType read FDocType write SetDocType;
+      property CurFileName: string read FCurFileName write SetCurFileName;
+    Public 
+      Procedure OpenFile(Const FileName: String);
+      overload;
+  End;
 
-var
+Var 
   MainForm: TMainForm;
 
-implementation
+Implementation
 
-uses frmAbout;
+Uses frmAbout;
 
 {$R *.lfm}
 
-procedure TMainForm.SetCurFileName(const Value: string);
-begin
+Procedure TMainForm.SetCurFileName(Const Value: String);
+Begin
   FCurFileName := Value;
   Statusbar1.SimpleText := Value;
-end;
+End;
 
-procedure TMainForm.SetDocType(Value: TDocumentType);
-begin
+Procedure TMainForm.SetDocType(Value: TDocumentType);
+Begin
   FDocType := Value;
   btnFileSave.Enabled := FDocType <> dtNone;
   FileSaveAs.Enabled := FDocType <> dtNone;
-end;
+End;
 
-procedure TMainForm.OpenFile(const FileName: string; aDocType: TDocumentType);
-var
+Procedure TMainForm.OpenFile(Const FileName: String; aDocType: TDocumentType);
+
+Var 
   InputStream: TFileStream;
   OutputStream: TMemoryStream;
-begin
+Begin
   InputStream := TFileStream.Create(FileName, fmOpenRead);
-  try
+  Try
     OutputStream := TMemoryStream.Create;
-    try
+    Try
       Process(ftHtml, aDocType, InputStream, OutputStream);
       OutputStream.seek(0, 0);
       IpHtmlPanel1.SetHtmlFromStream(OutputStream);
       DocType := aDocType;
       CurFileName := FileName;
-    finally
+    Finally
       OutputStream.Free;
-    end;
-  finally
-    InputStream.Free;
-  end;
-end;
+End;
+Finally
+  InputStream.Free;
+End;
+End;
 
-procedure TMainForm.FileOpenClick(Sender: TObject);
-begin
-  if OpenDialog1.Execute then
+Procedure TMainForm.FileOpenClick(Sender: TObject);
+Begin
+  If OpenDialog1.Execute Then
     OpenFile(OpenDialog1.FileName);
-end;
+End;
 
-procedure TMainForm.FileExitClick(Sender: TObject);
-begin
+Procedure TMainForm.FileExitClick(Sender: TObject);
+Begin
   Close;
-end;
+End;
 
 {
   Opens the preferences dialog (TODO)
 }
-procedure TMainForm.ToolsPrefClick(Sender: TObject);
-begin
-end;
+Procedure TMainForm.ToolsPrefClick(Sender: TObject);
+Begin
+End;
 
-procedure TMainForm.HelpAboutClick(Sender: TObject);
-begin
+Procedure TMainForm.HelpAboutClick(Sender: TObject);
+Begin
   AboutForm.ShowModal;
-end;
+End;
 
-function IsCppFileExtension(const extension: string): boolean;
-begin
-  IsCppFileExtension := (extension = '.cpp') or (extension = '.c') or (extension = '.h');
-end;
+Function IsCppFileExtension(Const extension: String): boolean;
+Begin
+  IsCppFileExtension := (extension = '.cpp') Or (extension = '.c') Or (extension = '.h');
+End;
 
-function IsPascalFileExtension(const extension: string): boolean;
-begin
-  IsPascalFileExtension := (extension = '.pas') or (extension = '.dpr') or
-    (extension = '.lpr');
-end;
+Function IsPascalFileExtension(Const extension: String): boolean;
+Begin
+  IsPascalFileExtension := (extension = '.pas') Or (extension = '.dpr') Or
+                           (extension = '.lpr');
+End;
 
-procedure TMainForm.OpenFile(const FileName: string);
-var
+Procedure TMainForm.OpenFile(Const FileName: String);
+
+Var 
   s: string;
-begin
+Begin
   s := ExtractFileExt(FileName);
-  if IsCppFileExtension(s) then
+  If IsCppFileExtension(s) Then
     OpenFile(FileName, dtCpp)
-  else if IsPascalFileExtension(s) then
-    OpenFile(FileName, dtPascal)
-  else if ExtractFileName(FileName) = '.editorconfig' then
-    OpenFile(FileName, dtEditorConfig)
-  else
-    MessageDlg('Αυτή η μορφή δεν υποστηρίζεται (' + s + ').', mtError, [mbOK], 0);
-end;
+  Else If IsPascalFileExtension(s) Then
+         OpenFile(FileName, dtPascal)
+  Else If ExtractFileName(FileName) = '.editorconfig' Then
+         OpenFile(FileName, dtEditorConfig)
+  Else
+    MessageDlg('Αυτή η μορφή δεν υποστηρίζεται (' + s + ').', mtError, [
+               mbOK], 0);
+End;
 
-procedure TMainForm.FileSaveAsClick(Sender: TObject);
-var
+Procedure TMainForm.FileSaveAsClick(Sender: TObject);
+
+Var 
   InputStream, OutputStream: TFileStream;
   formatterType: TFormatterType;
-begin
-  if FDocType <> dtNone then
-  begin
-    if SaveDialog1.Execute then
-    begin
-      case SaveDialog1.FilterIndex of
-        1: formatterType := ftRtf;
-        2: formatterType := ftHtml;
-        else
-          raise Exception.Create('Not implemented!');
-      end;
+Begin
+  If FDocType <> dtNone Then
+    Begin
+      If SaveDialog1.Execute Then
+        Begin
+          Case SaveDialog1.FilterIndex Of 
+            1: formatterType := ftRtf;
+            2: formatterType := ftHtml;
+            Else
+              raise Exception.Create('Not implemented!');
+          End;
 
-      InputStream := TFileStream.Create(FCurFilename, fmOpenRead);
-      try
-        OutputStream := TFileStream.Create(SaveDialog1.FileName, fmCreate);
-        try
-          Process(formatterType, FDocType, InputStream, OutputStream);
-        finally
-          OutputStream.Free;
-        end;
-      finally
-        InputStream.Free;
-      end;
-    end;
-  end;
-end;
+          InputStream := TFileStream.Create(FCurFilename, fmOpenRead);
+          Try
+            OutputStream := TFileStream.Create(SaveDialog1.FileName, fmCreate);
+            Try
+              Process(formatterType, FDocType, InputStream, OutputStream);
+            Finally
+              OutputStream.Free;
+        End;
+    Finally
+      InputStream.Free;
+End;
+End;
+End;
+End;
 
-procedure TMainForm.FormCreate(Sender: TObject);
-begin
+Procedure TMainForm.FormCreate(Sender: TObject);
+Begin
   DocType := dtNone;
-end;
+End;
+
 
 {
   Changes the default extension of the save dialog based on the selected
   filter in the drop down list.
 }
-procedure TMainForm.SaveDialog1TypeChange(Sender: TObject);
-begin
-  case SaveDialog1.FilterIndex of
+Procedure TMainForm.SaveDialog1TypeChange(Sender: TObject);
+Begin
+  Case SaveDialog1.FilterIndex Of 
     1: SaveDialog1.DefaultExt := 'rtf';
     2: SaveDialog1.DefaultExt := 'html';
-  end;
-end;
+  End;
+End;
 
-end.
+End.

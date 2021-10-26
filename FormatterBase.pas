@@ -1,60 +1,69 @@
-unit FormatterBase;
+
+Unit FormatterBase;
 
 {$mode delphi}
 
-interface
+Interface
 
-uses
-  Classes, SysUtils, TokenTypes;
+Uses 
+Classes, SysUtils, TokenTypes;
 
-type
-  { Base class for formatters. A formatter receives events from a lexer and
+Type 
+
+ { Base class for formatters. A formatter receives events from a lexer and
   pretty prints tokens. }
-  TFormatterBase = class
-  private
+  TFormatterBase = Class
+    Private 
     { Holds the output stream into which the formatter writes its output }
-    FOutputStream: TStream;
-  protected
+      FOutputStream: TStream;
+    Protected 
     { Gets the output stream into which the formatter writes its output }
-    property OutputStream: TStream read FOutputStream;
+      property OutputStream: TStream read FOutputStream;
 
     { Writes the given string to the output }
-    procedure Write(const str: string);
+      Procedure Write(Const str: String);
 
     { Writes the given string to the output, followed by a newline }
-    procedure WriteLn(const str: string);
-  public
-    constructor Create(OutputStream: TStream);
-    procedure WriteHeader; virtual; abstract;
-    procedure WriteFooter; virtual; abstract;
-    procedure WriteToken(const Token: string; const TokenType: TTokenType); virtual; abstract;
-  end;
+      Procedure WriteLn(Const str: String);
+    Public 
+      constructor Create(OutputStream: TStream);
+      Procedure WriteHeader;
+      virtual;
+      abstract;
+      Procedure WriteFooter;
+      virtual;
+      abstract;
+      Procedure WriteToken(Const Token: String; Const TokenType: TTokenType);
+      virtual;
+      abstract;
+  End;
 
-implementation
+Implementation
 
-procedure TFormatterBase.Write(const str: string);
-var
+Procedure TFormatterBase.Write(Const str: String);
+
+Var 
   b, Buf: PChar;
-begin
-  if Length(str) > 0 then
-  begin
-    GetMem(Buf, Length(str) + 1);
-    StrCopy(Buf, PChar(str));
-    b := Buf;
-    OutputStream.Write(Buf^, Length(str));
-    FreeMem(b);
-  end;
-end;
+Begin
+  If Length(str) > 0 Then
+    Begin
+      GetMem(Buf, Length(str) + 1);
+      StrCopy(Buf, PChar(str));
+      b := Buf;
+      OutputStream.Write(Buf^, Length(str));
+      FreeMem(b);
+    End;
+End;
 
-procedure TFormatterBase.WriteLn(const str: string);
-begin
+Procedure TFormatterBase.WriteLn(Const str: String);
+Begin
   Write(str);
   Write(LineEnding);
-end;
+End;
 
 constructor TFormatterBase.Create(OutputStream: TStream);
-begin
+Begin
   FOutputStream := OutputStream;
-end;
+End;
 
-end.
+End.

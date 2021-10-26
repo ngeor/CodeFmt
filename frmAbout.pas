@@ -1,36 +1,37 @@
-unit frmAbout;
+
+Unit frmAbout;
 
 {$MODE Delphi}
 
-interface
+Interface
 
-uses
-  LCLIntf, LCLType, LMessages, Messages, SysUtils, Classes, Graphics,
-  Controls, Forms, Dialogs,
-  ExtCtrls, StdCtrls;
+Uses 
+LCLIntf, LCLType, LMessages, Messages, SysUtils, Classes, Graphics,
+Controls, Forms, Dialogs,
+ExtCtrls, StdCtrls;
 
-type
-  TAboutForm = class(TForm)
+Type 
+  TAboutForm = Class(TForm)
     btnOk: TButton;
     Panel1: TPanel;
     Label1: TLabel;
     Label2: TLabel;
     Label3: TLabel;
     Label4: TLabel;
-  private
+    Private 
     { Private declarations }
-  public
+    Public 
     { Public declarations }
-  end;
+  End;
 
-var
+Var 
   AboutForm: TAboutForm;
 
-implementation
+Implementation
 
 {$R *.lfm}
 
 
 
 
-end.
+End.

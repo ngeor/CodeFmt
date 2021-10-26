@@ -1,65 +1,71 @@
-unit RTFFormatter;
+
+Unit RTFFormatter;
 
 {$mode delphi}
 
-interface
+Interface
 
-uses
-  Classes, SysUtils, TokenTypes, FormatterBase;
+Uses 
+Classes, SysUtils, TokenTypes, FormatterBase;
 
-type
-  TRTFFormatter = class(TFormatterBase)
-  private
-    function SetSpecial(const str: string): string;
-  public
-    procedure WriteFooter; override;
-    procedure WriteHeader; override;
-    procedure WriteToken(const Token: string; const TokenType: TTokenType); override;
-  end;
+Type 
+  TRTFFormatter = Class(TFormatterBase)
+    Private 
+      Function SetSpecial(Const str: String): string;
+    Public 
+      Procedure WriteFooter;
+      override;
+      Procedure WriteHeader;
+      override;
+      Procedure WriteToken(Const Token: String; Const TokenType: TTokenType);
+      override;
+  End;
 
-implementation
+Implementation
 
-procedure TRTFFormatter.WriteToken(const Token: string;
-  const TokenType: TTokenType);
-var
+Procedure TRTFFormatter.WriteToken(Const Token: String;
+                                   Const TokenType: TTokenType);
+
+Var 
   escapedToken, FormatToken: string;
-begin
+Begin
   escapedToken := SetSpecial(Token);
-  case TokenType of
+  Case TokenType Of 
     ttCRLF:
-      FormatToken := '\par' + escapedToken;
+            FormatToken := '\par' + escapedToken;
     ttDirective, ttKeyword:
-      FormatToken := '\b ' + escapedToken + '\b0 ';
+                            FormatToken := '\b ' + escapedToken + '\b0 ';
     ttComment:
-      FormatToken := '\cf1\i ' + escapedToken + '\cf0\i0 ';
-    else
+               FormatToken := '\cf1\i ' + escapedToken + '\cf0\i0 ';
+    Else
       FormatToken := escapedToken;
-  end;
+  End;
 
   Write(FormatToken);
-end;
+End;
 
-function TRTFFormatter.SetSpecial(const str: string): string;
-var
+Function TRTFFormatter.SetSpecial(Const str: String): string;
+
+Var 
   i: integer;
-begin
+Begin
   Result := '';
-  for i := 1 to Length(str) do
-    case str[i] of
+  For i := 1 To Length(str) Do
+    Case str[i] Of 
       '\', '{', '}': Result := Result + '\' + str[i];
-      else
+      Else
         Result := Result + str[i];
-    end;
-end;
+    End;
+End;
 
-procedure TRTFFormatter.WriteFooter;
-begin
+Procedure TRTFFormatter.WriteFooter;
+Begin
   WriteLn('');
   WriteLn('\par}');
-end;
+End;
 
-procedure TRTFFormatter.WriteHeader;
-begin
+Procedure TRTFFormatter.WriteHeader;
+Begin
   WriteLn('{\rtf1\ansi\ansicpg1253\deff0\deflang1032');
   WriteLn('');
   WriteLn('{\fonttbl');
@@ -69,6 +75,6 @@ begin
   WriteLn('{\colortbl ;\red0\green0\blue128;}');
   WriteLn('');
   WriteLn('\pard\plain \li120 \fs20');
-end;
+End;
 
-end.
+End.

@@ -1,62 +1,80 @@
-unit PascalLexer;
+
+Unit PascalLexer;
 
 {$MODE Delphi}
 
-interface
+Interface
 
-uses SysUtils, Classes, LexerBase;
+Uses SysUtils, Classes, LexerBase;
 
-type
-  TPascalLexer = class(TLexerBase)
-  private
-    procedure HandleAnsiComments;
-    procedure HandleBorC;
-    procedure HandleString;
-    procedure HandleIdentifier;
-    procedure HandleNumber;
-    procedure HandleSymbol;
-    procedure HandleMultilineComment;
-    procedure HandleChar;
-    procedure HandleHexNumber;
-    function IsDiffKey(aToken: string): boolean;
-    function IsDirective(aToken: string): boolean;
-    function IsKeyword(aToken: string): boolean;
-  protected
-    procedure Scan; override;
-  end;
+Type 
+  TPascalLexer = Class(TLexerBase)
+    Private 
+      Procedure HandleAnsiComments;
+      Procedure HandleBorC;
+      Procedure HandleString;
+      Procedure HandleIdentifier;
+      Procedure HandleNumber;
+      Procedure HandleSymbol;
+      Procedure HandleMultilineComment;
+      Procedure HandleChar;
+      Procedure HandleHexNumber;
+      Function IsDiffKey(aToken: String): boolean;
+      Function IsDirective(aToken: String): boolean;
+      Function IsKeyword(aToken: String): boolean;
+    Protected 
+      Procedure Scan;
+      override;
+  End;
 
-implementation
+Implementation
 
-uses TokenTypes;
+Uses TokenTypes;
 
-const
-  PasKeywords: array[0..98] of string =
-    ('ABSOLUTE', 'ABSTRACT', 'AND', 'ARRAY', 'AS', 'ASM', 'ASSEMBLER',
-    'AUTOMATED', 'BEGIN', 'CASE', 'CDECL', 'CLASS', 'CONST', 'CONSTRUCTOR',
-    'DEFAULT', 'DESTRUCTOR', 'DISPID', 'DISPINTERFACE', 'DIV', 'DO',
-    'DOWNTO', 'DYNAMIC', 'ELSE', 'END', 'EXCEPT', 'EXPORT', 'EXPORTS',
-    'EXTERNAL', 'FAR', 'FILE', 'FINALIZATION', 'FINALLY', 'FOR', 'FORWARD',
-    'FUNCTION', 'GOTO', 'IF', 'IMPLEMENTATION', 'IN', 'INDEX', 'INHERITED',
-    'INITIALIZATION', 'INLINE', 'INTERFACE', 'IS', 'LABEL', 'LIBRARY',
-    'MESSAGE', 'MOD', 'NAME', 'NEAR', 'NIL', 'NODEFAULT', 'NOT', 'OBJECT',
-    'OF', 'OR', 'OUT', 'OVERRIDE', 'PACKED', 'PASCAL', 'PRIVATE', 'PROCEDURE',
-    'PROGRAM', 'PROPERTY', 'PROTECTED', 'PUBLIC', 'PUBLISHED', 'RAISE',
-    'READ', 'READONLY', 'RECORD', 'REGISTER', 'REPEAT', 'RESIDENT',
-    'RESOURCESTRING', 'SAFECALL', 'SET', 'SHL', 'SHR', 'STDCALL', 'STORED',
-    'STRING', 'STRINGRESOURCE', 'THEN', 'THREADVAR', 'TO', 'TRY', 'TYPE',
-    'UNIT', 'UNTIL', 'USES', 'VAR', 'VIRTUAL', 'WHILE', 'WITH', 'WRITE',
-    'WRITEONLY', 'XOR');
+Const 
+  PasKeywords: array[0..98] Of string = 
+                                        ('ABSOLUTE', 'ABSTRACT', 'AND', 'ARRAY', 'AS', 'ASM',
+                                         'ASSEMBLER',
+                                         'AUTOMATED', 'BEGIN', 'CASE', 'CDECL', 'CLASS', 'CONST',
+                                         'CONSTRUCTOR',
+                                         'DEFAULT', 'DESTRUCTOR', 'DISPID', 'DISPINTERFACE', 'DIV',
+                                         'DO',
+                                         'DOWNTO', 'DYNAMIC', 'ELSE', 'END', 'EXCEPT', 'EXPORT',
+                                         'EXPORTS',
+                                         'EXTERNAL', 'FAR', 'FILE', 'FINALIZATION', 'FINALLY', 'FOR'
+                                         , 'FORWARD',
+                                         'FUNCTION', 'GOTO', 'IF', 'IMPLEMENTATION', 'IN', 'INDEX',
+                                         'INHERITED',
+                                         'INITIALIZATION', 'INLINE', 'INTERFACE', 'IS', 'LABEL',
+                                         'LIBRARY',
+                                         'MESSAGE', 'MOD', 'NAME', 'NEAR', 'NIL', 'NODEFAULT', 'NOT'
+                                         , 'OBJECT',
+                                         'OF', 'OR', 'OUT', 'OVERRIDE', 'PACKED', 'PASCAL',
+                                         'PRIVATE', 'PROCEDURE',
+                                         'PROGRAM', 'PROPERTY', 'PROTECTED', 'PUBLIC', 'PUBLISHED',
+                                         'RAISE',
+                                         'READ', 'READONLY', 'RECORD', 'REGISTER', 'REPEAT',
+                                         'RESIDENT',
+                                         'RESOURCESTRING', 'SAFECALL', 'SET', 'SHL', 'SHR',
+                                         'STDCALL', 'STORED',
+                                         'STRING', 'STRINGRESOURCE', 'THEN', 'THREADVAR', 'TO',
+                                         'TRY', 'TYPE',
+                                         'UNIT', 'UNTIL', 'USES', 'VAR', 'VIRTUAL', 'WHILE', 'WITH',
+                                         'WRITE',
+                                         'WRITEONLY', 'XOR');
 
-  PasDirectives: array[0..10] of string =
-    ('AUTOMATED', 'INDEX', 'NAME', 'NODEFAULT', 'READ', 'READONLY',
-    'RESIDENT', 'STORED', 'STRINGRECOURCE', 'WRITE', 'WRITEONLY');
+  PasDirectives: array[0..10] Of string = 
+                                          ('AUTOMATED', 'INDEX', 'NAME', 'NODEFAULT', 'READ',
+                                           'READONLY',
+                                           'RESIDENT', 'STORED', 'STRINGRECOURCE', 'WRITE',
+                                           'WRITEONLY');
 
-  PasDiffKeys: array[0..6] of string =
-    ('END', 'FUNCTION', 'PRIVATE', 'PROCEDURE', 'PRODECTED',
-    'PUBLIC', 'PUBLISHED');
+  PasDiffKeys: array[0..6] Of string = 
+                                       ('END', 'FUNCTION', 'PRIVATE', 'PROCEDURE', 'PRODECTED',
+                                        'PUBLIC', 'PUBLISHED');
 
-procedure TPascalLexer.Scan;
-begin
+Procedure TPascalLexer.Scan;
+Begin
   HandleCRLF(StreamTokenizer, TokenFound);
   HandleSpace(StreamTokenizer, TokenFound);
   HandleSlashesComment(StreamTokenizer, TokenFound);
@@ -68,217 +86,220 @@ begin
   HandleString;
   HandleChar;
   HandleHexNumber;
-end;
+End;
 
 (*
   Handles Ansi style comments, i.e. with parenthesis and stars.
 *)
-procedure TPascalLexer.HandleAnsiComments;
+Procedure TPascalLexer.HandleAnsiComments;
 
-  function IsEndOfAnsiComment: boolean;
-  begin
-    IsEndOfAnsiComment := (StreamTokenizer.Current = '*') and (StreamTokenizer.PeekNext = ')');
-  end;
+Function IsEndOfAnsiComment: boolean;
+Begin
+  IsEndOfAnsiComment := (StreamTokenizer.Current = '*') And (StreamTokenizer.PeekNext = ')');
+End;
 
-begin
-  if (StreamTokenizer.Current = '(') and (StreamTokenizer.PeekNext = '*') then
-  begin
+Begin
+  If (StreamTokenizer.Current = '(') And (StreamTokenizer.PeekNext = '*') Then
+    Begin
     { read the '(' and the '*' }
-    StreamTokenizer.Next;
-    StreamTokenizer.Next;
+      StreamTokenizer.Next;
+      StreamTokenizer.Next;
 
-    while (not StreamTokenizer.IsEof) and (not IsEndOfAnsiComment) do
-      HandleMultilineComment;
+      While (Not StreamTokenizer.IsEof) And (Not IsEndOfAnsiComment) Do
+        HandleMultilineComment;
 
-    if not StreamTokenizer.IsEof then
-    begin
+      If Not StreamTokenizer.IsEof Then
+        Begin
       { read the closing *) part of the comment }
-      StreamTokenizer.Next;
-      StreamTokenizer.Next;
-    end;
+          StreamTokenizer.Next;
+          StreamTokenizer.Next;
+        End;
 
-    CurrentTokenFound(ttComment);
-  end;
-end;
-
-procedure TPascalLexer.HandleMultilineComment;
-begin
-  if StreamTokenizer.IsEoln then
-  begin
-    { print accumulated comment so far }
-    if not StreamTokenizer.IsEmptyToken then
-    begin
       CurrentTokenFound(ttComment);
-    end;
+    End;
+End;
+
+Procedure TPascalLexer.HandleMultilineComment;
+Begin
+  If StreamTokenizer.IsEoln Then
+    Begin
+    { print accumulated comment so far }
+      If Not StreamTokenizer.IsEmptyToken Then
+        Begin
+          CurrentTokenFound(ttComment);
+        End;
 
     { print CRLF }
-    HandleCRLF(StreamTokenizer, TokenFound);
-  end
-  else
-  begin
+      HandleCRLF(StreamTokenizer, TokenFound);
+    End
+  Else
+    Begin
     { carry on }
-    StreamTokenizer.Next;
-  end;
-end;
+      StreamTokenizer.Next;
+    End;
+End;
 
 {
   Handles Borland style comments, i.e. with curly braces.
 }
-procedure TPascalLexer.HandleBorC;
-begin
-  if StreamTokenizer.Current = '{' then
-  begin
-    while (not StreamTokenizer.IsEof) and (StreamTokenizer.Current <> '}') do
-      HandleMultilineComment;
+Procedure TPascalLexer.HandleBorC;
+Begin
+  If StreamTokenizer.Current = '{' Then
+    Begin
+      While (Not StreamTokenizer.IsEof) And (StreamTokenizer.Current <> '}') Do
+        HandleMultilineComment;
 
     (* read the closing } part of the comment *)
-    if not StreamTokenizer.IsEof then
+      If Not StreamTokenizer.IsEof Then
+        StreamTokenizer.Next;
+
+      CurrentTokenFound(ttComment);
+    End;
+End;
+
+Procedure TPascalLexer.HandleString;
+Begin
+  If StreamTokenizer.Current = #39 Then
+    Begin
       StreamTokenizer.Next;
+      While (Not StreamTokenizer.IsEof) And (StreamTokenizer.Current <> #39) Do
+        StreamTokenizer.Next;
 
-    CurrentTokenFound(ttComment);
-  end;
-end;
-
-procedure TPascalLexer.HandleString;
-begin
-  if StreamTokenizer.Current = #39 then
-  begin
-    StreamTokenizer.Next;
-    while (not StreamTokenizer.IsEof) and (StreamTokenizer.Current <> #39) do
       StreamTokenizer.Next;
+      CurrentTokenFound(ttString);
+    End;
+End;  { HandleString }
 
-    StreamTokenizer.Next;
+Procedure TPascalLexer.HandleChar;
+Begin
+  If StreamTokenizer.Scan(['#'], ['0'..'9']) Then
     CurrentTokenFound(ttString);
-  end;
-end;  { HandleString }
+End;
 
-procedure TPascalLexer.HandleChar;
-begin
-  if StreamTokenizer.Scan(['#'], ['0'..'9']) then
-    CurrentTokenFound(ttString);
-end;
-
-procedure TPascalLexer.HandleHexNumber;
-begin
-  if StreamTokenizer.Scan(['$'], ['0'..'9', 'A'..'F', 'a'..'f']) then
+Procedure TPascalLexer.HandleHexNumber;
+Begin
+  If StreamTokenizer.Scan(['$'], ['0'..'9', 'A'..'F', 'a'..'f']) Then
     CurrentTokenFound(ttNumber);
-end;
+End;
 
-function BinarySearch(hay: array of string; needle: string): boolean;
-var
+Function BinarySearch(hay: Array Of String; needle: String): boolean;
+
+Var 
   First, Last, I, Compare: integer;
   Token: string;
-begin
+Begin
   First := Low(hay);
   Last := High(hay);
   Result := False;
   Token := UpperCase(needle);
-  while First <= Last do
-  begin
-    I := (First + Last) shr 1;
-    Compare := CompareStr(hay[i], Token);
-    if Compare = 0 then
-    begin
-      Result := True;
-      break;
-    end
-    else
-    if Compare < 0 then
-      First := I + 1
-    else
-      Last := I - 1;
-  end;
-end;
+  While First <= Last Do
+    Begin
+      I := (First + Last) shr 1;
+      Compare := CompareStr(hay[i], Token);
+      If Compare = 0 Then
+        Begin
+          Result := True;
+          break;
+        End
+      Else
+        If Compare < 0 Then
+          First := I + 1
+      Else
+        Last := I - 1;
+    End;
+End;
 
-function TPascalLexer.IsDiffKey(aToken: string): boolean;
-begin
+Function TPascalLexer.IsDiffKey(aToken: String): boolean;
+Begin
   Result := BinarySearch(PasDiffKeys, aToken);
-end;  { IsDiffKey }
+End;  { IsDiffKey }
 
-function TPascalLexer.IsDirective(aToken: string): boolean;
-var
+Function TPascalLexer.IsDirective(aToken: String): boolean;
+
+Var 
   First, Last, I, Compare: integer;
   Token: string;
   FDiffer: boolean;
-begin
+Begin
   First := Low(PasDirectives);
   Last := High(PasDirectives);
   Result := False;
   Token := UpperCase(aToken);
-  if CompareStr('PROPERTY', Token) = 0 then
+  If CompareStr('PROPERTY', Token) = 0 Then
     FDiffer := True;
-  if IsDiffKey(Token) then
+  If IsDiffKey(Token) Then
     FDiffer := False;
-  while First <= Last do
-  begin
-    I := (First + Last) shr 1;
-    Compare := CompareStr(PasDirectives[i], Token);
-    if Compare = 0 then
-    begin
-      Result := True;
-      if FDiffer then
-      begin
-        Result := False;
-        if CompareStr('NAME', Token) = 0 then
+  While First <= Last Do
+    Begin
+      I := (First + Last) shr 1;
+      Compare := CompareStr(PasDirectives[i], Token);
+      If Compare = 0 Then
+        Begin
           Result := True;
-        if CompareStr('RESIDENT', Token) = 0 then
-          Result := True;
-        if CompareStr('STRINGRESOURCE', Token) = 0 then
-          Result := True;
-      end;
-      break;
-    end
-    else
-    if Compare < 0 then
-      First := I + 1
-    else
-      Last := I - 1;
-  end;
-end;
+          If FDiffer Then
+            Begin
+              Result := False;
+              If CompareStr('NAME', Token) = 0 Then
+                Result := True;
+              If CompareStr('RESIDENT', Token) = 0 Then
+                Result := True;
+              If CompareStr('STRINGRESOURCE', Token) = 0 Then
+                Result := True;
+            End;
+          break;
+        End
+      Else
+        If Compare < 0 Then
+          First := I + 1
+      Else
+        Last := I - 1;
+    End;
+End;
 
-function TPascalLexer.IsKeyword(aToken: string): boolean;
-begin
+Function TPascalLexer.IsKeyword(aToken: String): boolean;
+Begin
   Result := BinarySearch(PasKeywords, aToken);
-end;
+End;
 
-procedure TPascalLexer.HandleIdentifier;
-var
+Procedure TPascalLexer.HandleIdentifier;
+
+Var 
   token: string;
   tokenType: TTokenType;
-begin
+Begin
   (* cannot start with number but it can contain one *)
-  if StreamTokenizer.Scan(['A'..'Z', 'a'..'z', '_'], ['A'..'Z', 'a'..'z', '0'..'9', '_']) then
-  begin
-    token := StreamTokenizer.TokenAndMark;
+  If StreamTokenizer.Scan(['A'..'Z', 'a'..'z', '_'], ['A'..'Z', 'a'..'z', '0'..'9', '_']) Then
+    Begin
+      token := StreamTokenizer.TokenAndMark;
 
-    if IsKeyword(token) then
-    begin
-      if IsDirective(token) then
-        tokenType := ttDirective
-      else
-        tokenType := ttKeyWord;
-    end
-    else
-      tokenType := ttIdentifier;
+      If IsKeyword(token) Then
+        Begin
+          If IsDirective(token) Then
+            tokenType := ttDirective
+          Else
+            tokenType := ttKeyWord;
+        End
+      Else
+        tokenType := ttIdentifier;
 
-    TokenFound(token, tokenType);
-  end;
-end;
+      TokenFound(token, tokenType);
+    End;
+End;
 
-procedure TPascalLexer.HandleNumber;
-begin
-  if StreamTokenizer.Scan(['0'..'9'], ['0'..'9', '.', 'e', 'E']) then
+Procedure TPascalLexer.HandleNumber;
+Begin
+  If StreamTokenizer.Scan(['0'..'9'], ['0'..'9', '.', 'e', 'E']) Then
     CurrentTokenFound(ttNumber);
-end;
+End;
 
-procedure TPascalLexer.HandleSymbol;
-begin
-  if (StreamTokenizer.Current in ['!', '"', '%', '&', '('..'/', ':'..'@',
-    '['..'^', '`', '~']) then
-  begin
-    StreamTokenizer.Next;
-    CurrentTokenFound(ttSymbol);
-  end;
-end;
+Procedure TPascalLexer.HandleSymbol;
+Begin
+  If (StreamTokenizer.Current In ['!', '"', '%', '&', '('..'/', ':'..'@',
+     '['..'^', '`', '~']) Then
+    Begin
+      StreamTokenizer.Next;
+      CurrentTokenFound(ttSymbol);
+    End;
+End;
 
-end.
+End.

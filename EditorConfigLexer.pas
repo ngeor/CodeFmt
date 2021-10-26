@@ -1,55 +1,57 @@
-unit EditorConfigLexer;
+
+Unit EditorConfigLexer;
 
 {$mode delphi}
 
-interface
+Interface
 
-uses
-  Classes, SysUtils, LexerBase;
+Uses 
+Classes, SysUtils, LexerBase;
 
-type
-  TEditorConfigLexer = class(TLexerBase)
-  protected
-    procedure Scan; override;
-  private
-    procedure HandleIdentifier;
-    procedure HandleNumber;
-    procedure HandleSymbol;
-  end;
+Type 
+  TEditorConfigLexer = Class(TLexerBase)
+    Protected 
+      Procedure Scan;
+      override;
+    Private 
+      Procedure HandleIdentifier;
+      Procedure HandleNumber;
+      Procedure HandleSymbol;
+  End;
 
-implementation
+Implementation
 
-uses TokenTypes;
+Uses TokenTypes;
 
-procedure TEditorConfigLexer.Scan;
-begin
+Procedure TEditorConfigLexer.Scan;
+Begin
   HandleCRLF(StreamTokenizer, TokenFound);
   HandleSpace(StreamTokenizer, TokenFound);
   HandleLineComment(StreamTokenizer, TokenFound, '#');
   HandleIdentifier;
   HandleNumber;
   HandleSymbol;
-end;
+End;
 
-procedure TEditorConfigLexer.HandleIdentifier;
-begin
-  if StreamTokenizer.Scan(['a'..'z'], ['a'..'z', '0'..'9', '-', '_']) then
+Procedure TEditorConfigLexer.HandleIdentifier;
+Begin
+  If StreamTokenizer.Scan(['a'..'z'], ['a'..'z', '0'..'9', '-', '_']) Then
     CurrentTokenFound(ttIdentifier);
-end;
+End;
 
-procedure TEditorConfigLexer.HandleNumber;
-begin
-  if StreamTokenizer.Scan(['0'..'9'], ['0'..'9']) then
+Procedure TEditorConfigLexer.HandleNumber;
+Begin
+  If StreamTokenizer.Scan(['0'..'9'], ['0'..'9']) Then
     CurrentTokenFound(ttNumber);
-end;
+End;
 
-procedure TEditorConfigLexer.HandleSymbol;
-begin
-  if StreamTokenizer.Current in ['[', ']', '=', '*'] then
-  begin
-    StreamTokenizer.Next;
-    CurrentTokenFound(ttSymbol);
-  end;
-end;
+Procedure TEditorConfigLexer.HandleSymbol;
+Begin
+  If StreamTokenizer.Current In ['[', ']', '=', '*'] Then
+    Begin
+      StreamTokenizer.Next;
+      CurrentTokenFound(ttSymbol);
+    End;
+End;
 
-end.
+End.

@@ -1,83 +1,89 @@
-unit HTMLFormatter;
+
+Unit HTMLFormatter;
 
 {$mode delphi}
 
-interface
+Interface
 
-uses
-  Classes, SysUtils, TokenTypes, FormatterBase;
+Uses 
+Classes, SysUtils, TokenTypes, FormatterBase;
 
-type
-  THTMLFormatter = class(TFormatterBase)
-  private
-    function SetSpecial(const str: string): string;
-  public
-    procedure WriteFooter; override;
-    procedure WriteHeader; override;
-    procedure WriteToken(const Token: string; const TokenType: TTokenType); override;
-  end;
+Type 
+  THTMLFormatter = Class(TFormatterBase)
+    Private 
+      Function SetSpecial(Const str: String): string;
+    Public 
+      Procedure WriteFooter;
+      override;
+      Procedure WriteHeader;
+      override;
+      Procedure WriteToken(Const Token: String; Const TokenType: TTokenType);
+      override;
+  End;
 
-implementation
+Implementation
 
-procedure THTMLFormatter.WriteToken(const Token: string;
-  const TokenType: TTokenType);
-var
+Procedure THTMLFormatter.WriteToken(Const Token: String;
+                                    Const TokenType: TTokenType);
+
+Var 
   escapedToken, FormatToken: string;
-begin
+Begin
   escapedToken := SetSpecial(Token);
-  case TokenType of
+  Case TokenType Of 
     ttCRLF:
-      FormatToken := '<BR>' + escapedToken;
+            FormatToken := '<BR>' + escapedToken;
     ttDirective, ttKeyWord:
-      FormatToken := '<B>' + escapedToken + '</B>';
+                            FormatToken := '<B>' + escapedToken + '</B>';
     ttComment:
-      FormatToken := '<FONT COLOR=#000080><I>' + escapedToken + '</I></FONT>';
+               FormatToken := '<FONT COLOR=#000080><I>' + escapedToken + '</I></FONT>';
     ttUnknown:
-      FormatToken := '<FONT COLOR=#FF0000><B>' + escapedToken + '</B></FONT>';
+               FormatToken := '<FONT COLOR=#FF0000><B>' + escapedToken + '</B></FONT>';
     ttPreProcessor:
-      FormatToken := '<FONT COLOR=#808080>' + escapedToken + '</FONT>';
-    else
+                    FormatToken := '<FONT COLOR=#808080>' + escapedToken + '</FONT>';
+    Else
       FormatToken := escapedToken;
-  end;
+  End;
 
   Write(FormatToken);
-end;
+End;
 
-function THTMLFormatter.SetSpecial(const str: string): string;
-var
+Function THTMLFormatter.SetSpecial(Const str: String): string;
+
+Var 
   i: integer;
-begin
+Begin
   Result := '';
-  for i := 1 to Length(str) do
-    case str[i] of
+  For i := 1 To Length(str) Do
+    Case str[i] Of 
       '<': Result := Result + '&lt;';
       '>': Result := Result + '&gt;';
       '&': Result := Result + '&amp;';
       '"': Result := Result + '&quot;';
-			#9: Result := Result + '&nbsp;&nbsp;'; {TODO: specify tab width}
+      #9: Result := Result + '&nbsp;&nbsp;'; {TODO: specify tab width}
       ' ':
-        if (i < Length(str)) and (str[i + 1] = ' ') then
-          Result := Result + '&nbsp;'
-        else
-          Result := Result + ' ';
-      else
+           If (i < Length(str)) And (str[i + 1] = ' ') Then
+             Result := Result + '&nbsp;'
+           Else
+             Result := Result + ' ';
+      Else
         Result := Result + str[i];
-    end;
-end;
+    End;
+End;
 
-procedure THTMLFormatter.WriteFooter;
-begin
+Procedure THTMLFormatter.WriteFooter;
+Begin
   WriteLn('</TT></BODY>');
   WriteLn('</HTML>');
-end;
+End;
 
-procedure THTMLFormatter.WriteHeader;
-begin
+Procedure THTMLFormatter.WriteHeader;
+Begin
   WriteLn('<HTML>');
   WriteLn('<HEAD>');
   WriteLn('<TITLE></TITLE>');
   WriteLn('</HEAD>');
   WriteLn('<BODY><TT>');
-end;
+End;
 
-end.
+End.

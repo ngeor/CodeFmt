@@ -1,94 +1,96 @@
-unit Factory;
+
+Unit Factory;
 
 {$mode delphi}
 
-interface
+Interface
 
-uses
-  Classes, SysUtils;
+Uses 
+Classes, SysUtils;
 
-type
+Type 
   { The document type to read. This determines which lexer will be used. }
   TDocumentType = (
     { Unknown document type}
-    dtNone,
+                   dtNone,
 
     { CPP source }
-    dtCpp,
+                   dtCpp,
 
     { Pascal source}
-    dtPascal,
+                   dtPascal,
 
     { EditorConfig configuration file }
-    dtEditorConfig
-  );
+                   dtEditorConfig
+                  );
 
   { The output type. This determines which formatter will be used. }
   TFormatterType = (
     { HTML }
-    ftHtml,
+                    ftHtml,
 
     { Rich text format }
-    ftRtf
-  );
+                    ftRtf
+                   );
 
 { Formats the given input stream and writes the formatted output into the output stream. }
-procedure Process(
-  FormatterType: TFormatterType;
-  DocumentType: TDocumentType;
-  InputStream, OutputStream: TStream);
+Procedure Process(
+                  FormatterType: TFormatterType;
+                  DocumentType: TDocumentType;
+                  InputStream, OutputStream: TStream);
 
-implementation
+Implementation
 
-uses
-  LexerBase, PascalLexer, CppLexer, EditorConfigLexer,
-  FormatterBase, RTFFormatter, HTMLFormatter;
+Uses 
+LexerBase, PascalLexer, CppLexer, EditorConfigLexer,
+FormatterBase, RTFFormatter, HTMLFormatter;
 
-function CreateFormatter(FormatterType: TFormatterType; OutputStream: TStream): TFormatterBase;
-begin
-  case FormatterType of
+Function CreateFormatter(FormatterType: TFormatterType; OutputStream: TStream): TFormatterBase;
+Begin
+  Case FormatterType Of 
     ftHtml:
-      Result := THTMLFormatter.Create(OutputStream);
+            Result := THTMLFormatter.Create(OutputStream);
     ftRtf:
-      Result := TRTFFormatter.Create(OutputStream);
-    else
+           Result := TRTFFormatter.Create(OutputStream);
+    Else
       raise Exception.Create('Not implemented!');
-  end;
-end;
+  End;
+End;
 
-function CreateLexer(DocumentType: TDocumentType; Formatter: TFormatterBase): TLexerBase;
-begin
-  case DocumentType of
+Function CreateLexer(DocumentType: TDocumentType; Formatter: TFormatterBase): TLexerBase;
+Begin
+  Case DocumentType Of 
     dtCpp:
-      Result := TCppLexer.Create(Formatter.WriteToken);
+           Result := TCppLexer.Create(Formatter.WriteToken);
     dtPascal:
-      Result := TPascalLexer.Create(Formatter.WriteToken);
+              Result := TPascalLexer.Create(Formatter.WriteToken);
     dtEditorConfig:
-      Result := TEditorConfigLexer.Create(Formatter.WriteToken);
-    else
+                    Result := TEditorConfigLexer.Create(Formatter.WriteToken);
+    Else
       raise Exception.Create('Not implemented');
-  end;
-end;
+  End;
+End;
 
-procedure Process(FormatterType: TFormatterType; DocumentType: TDocumentType; InputStream, OutputStream: TStream);
-var
+Procedure Process(FormatterType: TFormatterType; DocumentType: TDocumentType; InputStream,
+                  OutputStream: TStream);
+
+Var 
   formatter: TFormatterBase;
   lexer: TLexerBase;
-begin
+Begin
   formatter := CreateFormatter(FormatterType, OutputStream);
-  try
+  Try
     formatter.WriteHeader;
     lexer := CreateLexer(DocumentType, formatter);
-    try
+    Try
       lexer.FormatStream(InputStream);
-    finally
+    Finally
       lexer.Free;
-    end;
-    formatter.WriteFooter;
-  finally
-    formatter.Free;
-  end;
-end;
+End;
+formatter.WriteFooter;
+Finally
+  formatter.Free;
+End;
+End;
 
-end.
-
+End.

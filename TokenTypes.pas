@@ -1,25 +1,26 @@
-unit TokenTypes;
+
+Unit TokenTypes;
 
 {$mode delphi}
 
-interface
+Interface
 
-type
+Type 
   TTokenType = (
-    ttAssembler,
-    ttComment,
-    ttCRLF,
-    ttDirective,
-    ttIdentifier,
-    ttKeyWord,
-    ttNumber,
-    ttPreProcessor,
-    ttSpace,
-    ttString,
-    ttSymbol,
-    ttUnknown
-  );
+                ttAssembler,
+                ttComment,
+                ttCRLF,
+                ttDirective,
+                ttIdentifier,
+                ttKeyWord,
+                ttNumber,
+                ttPreProcessor,
+                ttSpace,
+                ttString,
+                ttSymbol,
+                ttUnknown
+               );
 
-implementation
+Implementation
 
-end.
+End.
