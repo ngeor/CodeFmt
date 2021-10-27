@@ -9,7 +9,8 @@ uses
 
 type
   { A callback method that is called when a token is found. }
-  TLexerTokenFound = procedure(const Token: string; const TokenType: TTokenType) of object;
+  TLexerTokenFound = procedure(const Token: string;
+    const TokenType: TTokenType) of object;
 
   { Base class for a lexer }
   TLexerBase = class
@@ -41,14 +42,13 @@ procedure HandleCRLF(StreamTokenizer: TStreamTokenizer; TokenFound: TLexerTokenF
 procedure HandleSpace(StreamTokenizer: TStreamTokenizer; TokenFound: TLexerTokenFound);
 
 { Handles a double slash line comment }
-procedure HandleSlashesComment(StreamTokenizer: TStreamTokenizer; TokenFound: TLexerTokenFound);
+procedure HandleSlashesComment(StreamTokenizer: TStreamTokenizer;
+  TokenFound: TLexerTokenFound);
 
 { Handles a single line comment. The comment denoting characters are
 identified by the CommentMark parameter. }
-procedure HandleLineComment(
-  StreamTokenizer: TStreamTokenizer;
-  TokenFound: TLexerTokenFound;
-  CommentMark: string);
+procedure HandleLineComment(StreamTokenizer: TStreamTokenizer;
+  TokenFound: TLexerTokenFound; CommentMark: string);
 
 implementation
 
@@ -111,16 +111,19 @@ end;
 
 procedure HandleSpace(StreamTokenizer: TStreamTokenizer; TokenFound: TLexerTokenFound);
 begin
-  if StreamTokenizer.Scan([#1..#9, #11, #12, #14..#32], [#1..#9, #11, #12, #14..#32]) then
+  if StreamTokenizer.Scan([#1..#9, #11, #12, #14..#32],
+    [#1..#9, #11, #12, #14..#32]) then
     TokenFound(StreamTokenizer.TokenAndMark, ttSpace);
 end;
 
-procedure HandleSlashesComment(StreamTokenizer: TStreamTokenizer; TokenFound: TLexerTokenFound);
+procedure HandleSlashesComment(StreamTokenizer: TStreamTokenizer;
+  TokenFound: TLexerTokenFound);
 begin
   HandleLineComment(StreamTokenizer, TokenFound, '//');
 end;
 
-procedure HandleLineComment(StreamTokenizer: TStreamTokenizer; TokenFound: TLexerTokenFound; CommentMark: string);
+procedure HandleLineComment(StreamTokenizer: TStreamTokenizer;
+  TokenFound: TLexerTokenFound; CommentMark: string);
 begin
   if StreamTokenizer.PeekLength(Length(CommentMark)) = CommentMark then
   begin

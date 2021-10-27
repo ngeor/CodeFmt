@@ -21,7 +21,7 @@ type
 
     { EditorConfig configuration file }
     dtEditorConfig
-  );
+    );
 
   { The output type. This determines which formatter will be used. }
   TFormatterType = (
@@ -30,12 +30,10 @@ type
 
     { Rich text format }
     ftRtf
-  );
+    );
 
 { Formats the given input stream and writes the formatted output into the output stream. }
-procedure Process(
-  FormatterType: TFormatterType;
-  DocumentType: TDocumentType;
+procedure Process(FormatterType: TFormatterType; DocumentType: TDocumentType;
   InputStream, OutputStream: TStream);
 
 implementation
@@ -44,7 +42,8 @@ uses
   LexerBase, PascalLexer, CppLexer, EditorConfigLexer,
   FormatterBase, RTFFormatter, HTMLFormatter;
 
-function CreateFormatter(FormatterType: TFormatterType; OutputStream: TStream): TFormatterBase;
+function CreateFormatter(FormatterType: TFormatterType;
+  OutputStream: TStream): TFormatterBase;
 begin
   case FormatterType of
     ftHtml:
@@ -70,7 +69,8 @@ begin
   end;
 end;
 
-procedure Process(FormatterType: TFormatterType; DocumentType: TDocumentType; InputStream, OutputStream: TStream);
+procedure Process(FormatterType: TFormatterType; DocumentType: TDocumentType;
+  InputStream, OutputStream: TStream);
 var
   formatter: TFormatterBase;
   lexer: TLexerBase;
@@ -91,4 +91,3 @@ begin
 end;
 
 end.
-
