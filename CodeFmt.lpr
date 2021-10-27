@@ -13,29 +13,29 @@ uses
 
 {$R *.res}
 
-function RightSeekPos(const substr, s: string): integer;
-var
-  i, k: integer;
-begin
-  k := Length(substr);
-  i := Length(s) - k + 1;
-  while (i > 0) and (Copy(s, i, k) <> substr) do
-    i := i - 1;
-  Result := i;
-end;
+  function RightSeekPos(const substr, s: string): integer;
+  var
+    i, k: integer;
+  begin
+    k := Length(substr);
+    i := Length(s) - k + 1;
+    while (i > 0) and (Copy(s, i, k) <> substr) do
+      i := i - 1;
+    Result := i;
+  end;
 
-function GetFormatterType(s: string): TFormatterType;
-var
-  toUpper: string;
-begin
-  toUpper := UpperCase(s);
-  if toUpper = 'RTF' then
-    Result := ftRtf
-  else if toUpper = 'HTML' then
-    Result := ftHtml
-  else
-    raise Exception.Create('Unsupported output format: ' + s);
-end;
+  function GetFormatterType(s: string): TFormatterType;
+  var
+    toUpper: string;
+  begin
+    toUpper := UpperCase(s);
+    if toUpper = 'RTF' then
+      Result := ftRtf
+    else if toUpper = 'HTML' then
+      Result := ftHtml
+    else
+      raise Exception.Create('Unsupported output format: ' + s);
+  end;
 
 const
   sExt: array [ftHtml..ftRtf] of string = ('.html', '.rtf');

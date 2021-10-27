@@ -154,7 +154,7 @@ var
 begin
   buffer := '';
   i := 0;
-  while (i < count) and ((FCurrent + i)^ <> #0) do
+  while (i < Count) and ((FCurrent + i)^ <> #0) do
   begin
     buffer := buffer + (FCurrent + i)^;
     Inc(i);

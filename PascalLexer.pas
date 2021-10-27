@@ -77,7 +77,8 @@ procedure TPascalLexer.HandleAnsiComments;
 
   function IsEndOfAnsiComment: boolean;
   begin
-    IsEndOfAnsiComment := (StreamTokenizer.Current = '*') and (StreamTokenizer.PeekNext = ')');
+    IsEndOfAnsiComment := (StreamTokenizer.Current = '*') and
+      (StreamTokenizer.PeekNext = ')');
   end;
 
 begin
@@ -247,7 +248,8 @@ var
   tokenType: TTokenType;
 begin
   (* cannot start with number but it can contain one *)
-  if StreamTokenizer.Scan(['A'..'Z', 'a'..'z', '_'], ['A'..'Z', 'a'..'z', '0'..'9', '_']) then
+  if StreamTokenizer.Scan(['A'..'Z', 'a'..'z', '_'],
+    ['A'..'Z', 'a'..'z', '0'..'9', '_']) then
   begin
     token := StreamTokenizer.TokenAndMark;
 
