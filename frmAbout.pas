@@ -5,9 +5,9 @@ unit frmAbout;
 interface
 
 uses
-  LCLIntf, LCLType, LMessages, Messages, SysUtils, Classes, Graphics,
-  Controls, Forms, Dialogs,
-  ExtCtrls, StdCtrls;
+LCLIntf, LCLType, LMessages, Messages, SysUtils, Classes, Graphics,
+Controls, Forms, Dialogs,
+ExtCtrls, StdCtrls;
 
 type
   TAboutForm = class(TForm)
@@ -17,9 +17,9 @@ type
     Label2: TLabel;
     Label3: TLabel;
     Label4: TLabel;
-  private
+    private
     { Private declarations }
-  public
+    public
     { Public declarations }
   end;
 

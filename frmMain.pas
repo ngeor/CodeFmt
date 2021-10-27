@@ -5,10 +5,10 @@ unit frmMain;
 interface
 
 uses
-  LCLIntf, LCLType, SysUtils, Classes, Graphics, Controls,
-  Forms, Dialogs, ComCtrls, Buttons, ExtCtrls, Menus,
-  IpHtml,
-  Factory;
+LCLIntf, LCLType, SysUtils, Classes, Graphics, Controls,
+Forms, Dialogs, ComCtrls, Buttons, ExtCtrls, Menus,
+IpHtml,
+Factory;
 
 type
   { TMainForm }
@@ -38,16 +38,18 @@ type
     procedure FileSaveAsClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure SaveDialog1TypeChange(Sender: TObject);
-  private
-    FDocType: TDocumentType;
-    FCurFileName: string;
-    procedure SetDocType(Value: TDocumentType);
-    procedure SetCurFileName(const Value: string);
-    procedure OpenFile(const FileName: string; aDocType: TDocumentType); overload;
-    property DocType: TDocumentType read FDocType write SetDocType;
-    property CurFileName: string read FCurFileName write SetCurFileName;
-  public
-    procedure OpenFile(const FileName: string); overload;
+    private
+      FDocType: TDocumentType;
+      FCurFileName: string;
+      procedure SetDocType(Value: TDocumentType);
+      procedure SetCurFileName(const Value: string);
+      procedure OpenFile(const FileName: string; aDocType: TDocumentType);
+      overload;
+      property DocType: TDocumentType read FDocType write SetDocType;
+      property CurFileName: string read FCurFileName write SetCurFileName;
+    public
+      procedure OpenFile(const FileName: string);
+      overload;
   end;
 
 var
@@ -73,6 +75,7 @@ begin
 end;
 
 procedure TMainForm.OpenFile(const FileName: string; aDocType: TDocumentType);
+
 var
   InputStream: TFileStream;
   OutputStream: TMemoryStream;
@@ -88,10 +91,10 @@ begin
       CurFileName := FileName;
     finally
       OutputStream.Free;
-    end;
-  finally
-    InputStream.Free;
-  end;
+end;
+finally
+  InputStream.Free;
+end;
 end;
 
 procedure TMainForm.FileOpenClick(Sender: TObject);
@@ -125,10 +128,11 @@ end;
 function IsPascalFileExtension(const extension: string): boolean;
 begin
   IsPascalFileExtension := (extension = '.pas') or (extension = '.dpr') or
-    (extension = '.lpr');
+                           (extension = '.lpr');
 end;
 
 procedure TMainForm.OpenFile(const FileName: string);
+
 var
   s: string;
 begin
@@ -136,48 +140,51 @@ begin
   if IsCppFileExtension(s) then
     OpenFile(FileName, dtCpp)
   else if IsPascalFileExtension(s) then
-    OpenFile(FileName, dtPascal)
+         OpenFile(FileName, dtPascal)
   else if ExtractFileName(FileName) = '.editorconfig' then
-    OpenFile(FileName, dtEditorConfig)
+         OpenFile(FileName, dtEditorConfig)
   else
-    MessageDlg('Αυτή η μορφή δεν υποστηρίζεται (' + s + ').', mtError, [mbOK], 0);
+    MessageDlg('Αυτή η μορφή δεν υποστηρίζεται (' + s + ').', mtError, [
+               mbOK], 0);
 end;
 
 procedure TMainForm.FileSaveAsClick(Sender: TObject);
+
 var
   InputStream, OutputStream: TFileStream;
   formatterType: TFormatterType;
 begin
   if FDocType <> dtNone then
-  begin
-    if SaveDialog1.Execute then
     begin
-      case SaveDialog1.FilterIndex of
-        1: formatterType := ftRtf;
-        2: formatterType := ftHtml;
-        else
-          raise Exception.Create('Not implemented!');
-      end;
+      if SaveDialog1.Execute then
+        begin
+          case SaveDialog1.FilterIndex of
+            1: formatterType := ftRtf;
+            2: formatterType := ftHtml;
+            else
+              raise Exception.Create('Not implemented!');
+          end;
 
-      InputStream := TFileStream.Create(FCurFilename, fmOpenRead);
-      try
-        OutputStream := TFileStream.Create(SaveDialog1.FileName, fmCreate);
-        try
-          Process(formatterType, FDocType, InputStream, OutputStream);
-        finally
-          OutputStream.Free;
+          InputStream := TFileStream.Create(FCurFilename, fmOpenRead);
+          try
+            OutputStream := TFileStream.Create(SaveDialog1.FileName, fmCreate);
+            try
+              Process(formatterType, FDocType, InputStream, OutputStream);
+            finally
+              OutputStream.Free;
         end;
-      finally
-        InputStream.Free;
-      end;
-    end;
-  end;
+    finally
+      InputStream.Free;
+end;
+end;
+end;
 end;
 
 procedure TMainForm.FormCreate(Sender: TObject);
 begin
   DocType := dtNone;
 end;
+
 
 {
   Changes the default extension of the save dialog based on the selected
