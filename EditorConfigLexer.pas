@@ -4,17 +4,18 @@ unit EditorConfigLexer;
 
 interface
 
-uses
-  Classes, SysUtils, LexerBase;
+uses 
+Classes, SysUtils, LexerBase;
 
-type
+type 
   TEditorConfigLexer = class(TLexerBase)
-  protected
-    procedure Scan; override;
-  private
-    procedure HandleIdentifier;
-    procedure HandleNumber;
-    procedure HandleSymbol;
+    protected 
+      procedure Scan;
+      override;
+    private 
+      procedure HandleIdentifier;
+      procedure HandleNumber;
+      procedure HandleSymbol;
   end;
 
 implementation
@@ -46,10 +47,10 @@ end;
 procedure TEditorConfigLexer.HandleSymbol;
 begin
   if StreamTokenizer.Current in ['[', ']', '=', '*'] then
-  begin
-    StreamTokenizer.Next;
-    CurrentTokenFound(ttSymbol);
-  end;
+    begin
+      StreamTokenizer.Next;
+      CurrentTokenFound(ttSymbol);
+    end;
 end;
 
 end.

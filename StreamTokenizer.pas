@@ -4,69 +4,74 @@ unit StreamTokenizer;
 
 interface
 
-uses
-  Classes, SysUtils;
+uses 
+Classes, SysUtils;
 
-type
+type 
   { Parses a stream of characters and returns tokens }
   TStreamTokenizer = class
-  private
-    FReadBuf: PChar;
-    FCurrent: PChar;
-    FMark: PChar;
-    FPosition: integer;
-    FReadBufSize: integer;
-    function GetCurrent: char;
-    procedure Mark;
-    function Token: string;
-  public
-    constructor Create(InputStream: TStream);
-    destructor Destroy; override;
+    private 
+      FReadBuf: PChar;
+      FCurrent: PChar;
+      FMark: PChar;
+      FPosition: integer;
+      FReadBufSize: integer;
+      function GetCurrent: char;
+      procedure Mark;
+      function Token: string;
+    public 
+      constructor Create(InputStream: TStream);
+      destructor Destroy;
+      override;
 
     { Advances the current position by one character }
-    procedure Next;
+      procedure Next;
 
-    { Returns the token that has been read so far and prepares the StreamTokenizer
+
+{ Returns the token that has been read so far and prepares the StreamTokenizer
     for reading the following token. }
-    function TokenAndMark: string;
+      function TokenAndMark: string;
 
     { Returns the next available character without advancing the current position }
-    function PeekNext: char;
+      function PeekNext: char;
 
-    { Returns a string that consists of the next characters without advancing
+
+{ Returns a string that consists of the next characters without advancing
     the current position }
-    function PeekLength(Count: integer): string;
+      function PeekLength(Count: integer): string;
 
     { Gets a value indicating whether all the characters have been read or not }
-    function IsEof: boolean;
+      function IsEof: boolean;
 
     { Gets a value indicating whether the next character is an end of line }
-    function IsEoln: boolean;
+      function IsEoln: boolean;
 
     { Gets a value indicating whether the current position is equal to the
     marked position }
-    function IsEmptyToken: boolean;
+      function IsEmptyToken: boolean;
 
-    { Advances the current position as long as the character is within the
+
+{ Advances the current position as long as the character is within the
     validChars set. The first character must be within the firstChar set.
     Returns true if the position was advanced, false otherwise. }
-    function Scan(firstChar, validChars: TSysCharSet): boolean;
+      function Scan(firstChar, validChars: TSysCharSet): boolean;
 
     { Gets the character at the current position of the reader. }
-    property Current: char read GetCurrent;
+      property Current: char read GetCurrent;
 
     { Gets the current position in the stream. }
-    property Position: integer read FPosition;
+      property Position: integer read FPosition;
   end;
 
 implementation
 
 constructor TStreamTokenizer.Create(InputStream: TStream);
-var
+
+var 
   FReadBuf: PChar;
 begin
   GetMem(FReadBuf, InputStream.Size + 1);
-  FReadBufSize := InputStream.Read(FReadBuf^, InputStream.Size);
+  FReadBufSize := InputStream.read(FReadBuf^, InputStream.Size);
   FReadBuf[FReadBufSize] := #0;
   FCurrent := FReadBuf;
   FPosition := 0;
@@ -95,7 +100,8 @@ begin
 end;
 
 function TStreamTokenizer.Token: string;
-var
+
+var 
   tokenLen: integer;
   tokenString: string;
 begin
@@ -136,29 +142,30 @@ end;
 function TStreamTokenizer.Scan(firstChar: TSysCharSet; validChars: TSysCharSet): boolean;
 begin
   if Current in firstChar then
-  begin
-    Next;
-    while (not IsEof) and (Current in validChars) do
+    begin
       Next;
+      while (not IsEof) and (Current in validChars) do
+        Next;
 
-    Scan := True;
-  end
+      Scan := True;
+    end
   else
     Scan := False;
 end;
 
 function TStreamTokenizer.PeekLength(Count: integer): string;
-var
+
+var 
   buffer: string;
   i: integer;
 begin
   buffer := '';
   i := 0;
   while (i < count) and ((FCurrent + i)^ <> #0) do
-  begin
-    buffer := buffer + (FCurrent + i)^;
-    Inc(i);
-  end;
+    begin
+      buffer := buffer + (FCurrent + i)^;
+      Inc(i);
+    end;
 
   Result := buffer;
 end;

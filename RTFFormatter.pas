@@ -4,34 +4,38 @@ unit RTFFormatter;
 
 interface
 
-uses
-  Classes, SysUtils, TokenTypes, FormatterBase;
+uses 
+Classes, SysUtils, TokenTypes, FormatterBase;
 
-type
+type 
   TRTFFormatter = class(TFormatterBase)
-  private
-    function SetSpecial(const str: string): string;
-  public
-    procedure WriteFooter; override;
-    procedure WriteHeader; override;
-    procedure WriteToken(const Token: string; const TokenType: TTokenType); override;
+    private 
+      function SetSpecial(const str: string): string;
+    public 
+      procedure WriteFooter;
+      override;
+      procedure WriteHeader;
+      override;
+      procedure WriteToken(const Token: string; const TokenType: TTokenType);
+      override;
   end;
 
 implementation
 
 procedure TRTFFormatter.WriteToken(const Token: string;
-  const TokenType: TTokenType);
-var
+                                   const TokenType: TTokenType);
+
+var 
   escapedToken, FormatToken: string;
 begin
   escapedToken := SetSpecial(Token);
-  case TokenType of
+  case TokenType of 
     ttCRLF:
-      FormatToken := '\par' + escapedToken;
+            FormatToken := '\par' + escapedToken;
     ttDirective, ttKeyword:
-      FormatToken := '\b ' + escapedToken + '\b0 ';
+                            FormatToken := '\b ' + escapedToken + '\b0 ';
     ttComment:
-      FormatToken := '\cf1\i ' + escapedToken + '\cf0\i0 ';
+               FormatToken := '\cf1\i ' + escapedToken + '\cf0\i0 ';
     else
       FormatToken := escapedToken;
   end;
@@ -40,12 +44,13 @@ begin
 end;
 
 function TRTFFormatter.SetSpecial(const str: string): string;
-var
+
+var 
   i: integer;
 begin
   Result := '';
   for i := 1 to Length(str) do
-    case str[i] of
+    case str[i] of 
       '\', '{', '}': Result := Result + '\' + str[i];
       else
         Result := Result + str[i];

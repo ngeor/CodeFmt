@@ -4,12 +4,12 @@ unit frmAbout;
 
 interface
 
-uses
-  LCLIntf, LCLType, LMessages, Messages, SysUtils, Classes, Graphics,
-  Controls, Forms, Dialogs,
-  ExtCtrls, StdCtrls;
+uses 
+LCLIntf, LCLType, LMessages, Messages, SysUtils, Classes, Graphics,
+Controls, Forms, Dialogs,
+ExtCtrls, StdCtrls;
 
-type
+type 
   TAboutForm = class(TForm)
     btnOk: TButton;
     Panel1: TPanel;
@@ -17,13 +17,13 @@ type
     Label2: TLabel;
     Label3: TLabel;
     Label4: TLabel;
-  private
+    private 
     { Private declarations }
-  public
+    public 
     { Public declarations }
   end;
 
-var
+var 
   AboutForm: TAboutForm;
 
 implementation
