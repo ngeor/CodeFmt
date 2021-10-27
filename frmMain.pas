@@ -140,7 +140,8 @@ begin
   else if ExtractFileName(FileName) = '.editorconfig' then
     OpenFile(FileName, dtEditorConfig)
   else
-    MessageDlg('Αυτή η μορφή δεν υποστηρίζεται (' + s + ').', mtError, [mbOK], 0);
+    MessageDlg('Αυτή η μορφή δεν υποστηρίζεται (' +
+      s + ').', mtError, [mbOK], 0);
 end;
 
 procedure TMainForm.FileSaveAsClick(Sender: TObject);

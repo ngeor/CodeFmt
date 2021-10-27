@@ -19,8 +19,7 @@ type
 
 implementation
 
-procedure TRTFFormatter.WriteToken(const Token: string;
-  const TokenType: TTokenType);
+procedure TRTFFormatter.WriteToken(const Token: string; const TokenType: TTokenType);
 var
   escapedToken, FormatToken: string;
 begin

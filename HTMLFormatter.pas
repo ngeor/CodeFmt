@@ -19,8 +19,7 @@ type
 
 implementation
 
-procedure THTMLFormatter.WriteToken(const Token: string;
-  const TokenType: TTokenType);
+procedure THTMLFormatter.WriteToken(const Token: string; const TokenType: TTokenType);
 var
   escapedToken, FormatToken: string;
 begin
@@ -54,7 +53,7 @@ begin
       '>': Result := Result + '&gt;';
       '&': Result := Result + '&amp;';
       '"': Result := Result + '&quot;';
-			#9: Result := Result + '&nbsp;&nbsp;'; {TODO: specify tab width}
+      #9: Result := Result + '&nbsp;&nbsp;'; {TODO: specify tab width}
       ' ':
         if (i < Length(str)) and (str[i + 1] = ' ') then
           Result := Result + '&nbsp;'

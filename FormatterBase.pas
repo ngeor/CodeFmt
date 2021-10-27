@@ -27,7 +27,8 @@ type
     constructor Create(OutputStream: TStream);
     procedure WriteHeader; virtual; abstract;
     procedure WriteFooter; virtual; abstract;
-    procedure WriteToken(const Token: string; const TokenType: TTokenType); virtual; abstract;
+    procedure WriteToken(const Token: string; const TokenType: TTokenType);
+      virtual; abstract;
   end;
 
 implementation

@@ -18,7 +18,7 @@ type
     ttString,
     ttSymbol,
     ttUnknown
-  );
+    );
 
 implementation
 
