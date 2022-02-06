@@ -124,7 +124,8 @@ end;
 
 function IsPascalFileExtension(const extension: string): boolean;
 begin
-  IsPascalFileExtension := (extension = '.pas') or (extension = '.dpr') or (extension = '.lpr');
+  IsPascalFileExtension := (extension = '.pas') or (extension = '.dpr') or
+    (extension = '.lpr');
 end;
 
 procedure TMainForm.OpenFile(const FileName: string);
@@ -139,7 +140,8 @@ begin
   else if ExtractFileName(FileName) = '.editorconfig' then
     OpenFile(FileName, dtEditorConfig)
   else
-    MessageDlg('Αυτή η μορφή δεν υποστηρίζεται (' + s + ').', mtError, [mbOK], 0);
+    MessageDlg('Αυτή η μορφή δεν υποστηρίζεται (' +
+      s + ').', mtError, [mbOK], 0);
 end;
 
 procedure TMainForm.FileSaveAsClick(Sender: TObject);
