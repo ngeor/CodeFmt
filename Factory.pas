@@ -5,24 +5,9 @@ unit Factory;
 interface
 
 uses
-  Classes, SysUtils;
+  Classes, SysUtils, DocumentTypes;
 
 type
-  { The document type to read. This determines which lexer will be used. }
-  TDocumentType = (
-    { Unknown document type}
-    dtNone,
-
-    { CPP source }
-    dtCpp,
-
-    { Pascal source}
-    dtPascal,
-
-    { EditorConfig configuration file }
-    dtEditorConfig
-    );
-
   { The output type. This determines which formatter will be used. }
   TFormatterType = (
     { HTML }

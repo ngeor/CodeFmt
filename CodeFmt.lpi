@@ -41,7 +41,7 @@
         <PackageName Value="LCL"/>
       </Item2>
     </RequiredPackages>
-    <Units Count="13">
+    <Units Count="14">
       <Unit0>
         <Filename Value="CodeFmt.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -100,6 +100,11 @@
         <Filename Value="RTFFormatter.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit12>
+      <Unit13>
+        <Filename Value="documenttypes.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="DocumentTypes"/>
+      </Unit13>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

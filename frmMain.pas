@@ -8,7 +8,7 @@ uses
   LCLIntf, LCLType, SysUtils, Classes, Graphics, Controls,
   Forms, Dialogs, ComCtrls, Buttons, ExtCtrls, Menus,
   IpHtml,
-  Factory;
+  Factory, DocumentTypes;
 
 type
   { TMainForm }
@@ -117,31 +117,15 @@ begin
   AboutForm.ShowModal;
 end;
 
-function IsCppFileExtension(const extension: string): boolean;
-begin
-  IsCppFileExtension := (extension = '.cpp') or (extension = '.c') or (extension = '.h');
-end;
-
-function IsPascalFileExtension(const extension: string): boolean;
-begin
-  IsPascalFileExtension := (extension = '.pas') or (extension = '.dpr') or
-    (extension = '.lpr');
-end;
-
 procedure TMainForm.OpenFile(const FileName: string);
 var
-  s: string;
+  DocumentType: TDocumentType;
 begin
-  s := ExtractFileExt(FileName);
-  if IsCppFileExtension(s) then
-    OpenFile(FileName, dtCpp)
-  else if IsPascalFileExtension(s) then
-    OpenFile(FileName, dtPascal)
-  else if ExtractFileName(FileName) = '.editorconfig' then
-    OpenFile(FileName, dtEditorConfig)
+  DocumentType := GetDocumentType(FileName);
+  if DocumentType = dtNone then
+    MessageDlg('Αυτή η μορφή δεν υποστηρίζεται', mtError, [mbOK], 0)
   else
-    MessageDlg('Αυτή η μορφή δεν υποστηρίζεται (' +
-      s + ').', mtError, [mbOK], 0);
+    OpenFile(FileName, DocumentType);
 end;
 
 procedure TMainForm.FileSaveAsClick(Sender: TObject);

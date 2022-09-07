@@ -8,6 +8,7 @@ uses
   Forms,
   Interfaces,
   Factory in 'Factory.pas',
+  DocumentTypes,
   frmMain in 'frmMain.pas' {MainForm},
   frmAbout in 'frmAbout.pas' {AboutForm};
 
