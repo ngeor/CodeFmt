@@ -5,7 +5,7 @@ unit frmAbout;
 interface
 
 uses
-  LCLIntf, LCLType, LMessages, Messages, SysUtils, Classes, Graphics,
+  LCLIntf, LCLType, SysUtils, Classes, Graphics,
   Controls, Forms, Dialogs,
   ExtCtrls, StdCtrls;
 
