@@ -19,21 +19,21 @@ type
     property OutputStream: TStream read FOutputStream;
 
     { Writes the given string to the output }
-    procedure Write(const str: string);
+    procedure Write(const str: String);
 
     { Writes the given string to the output, followed by a newline }
-    procedure WriteLn(const str: string);
+    procedure WriteLn(const str: String);
   public
     constructor Create(OutputStream: TStream);
     procedure WriteHeader; virtual; abstract;
     procedure WriteFooter; virtual; abstract;
-    procedure WriteToken(const Token: string; const TokenType: TTokenType);
+    procedure WriteToken(const Token: String; const TokenType: TTokenType);
       virtual; abstract;
   end;
 
 implementation
 
-procedure TFormatterBase.Write(const str: string);
+procedure TFormatterBase.Write(const str: String);
 var
   b, Buf: PChar;
 begin
@@ -47,7 +47,7 @@ begin
   end;
 end;
 
-procedure TFormatterBase.WriteLn(const str: string);
+procedure TFormatterBase.WriteLn(const str: String);
 begin
   Write(str);
   Write(LineEnding);

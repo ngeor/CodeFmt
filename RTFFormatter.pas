@@ -10,18 +10,18 @@ uses
 type
   TRTFFormatter = class(TFormatterBase)
   private
-    function SetSpecial(const str: string): string;
+    function SetSpecial(const str: String): String;
   public
     procedure WriteFooter; override;
     procedure WriteHeader; override;
-    procedure WriteToken(const Token: string; const TokenType: TTokenType); override;
+    procedure WriteToken(const Token: String; const TokenType: TTokenType); override;
   end;
 
 implementation
 
-procedure TRTFFormatter.WriteToken(const Token: string; const TokenType: TTokenType);
+procedure TRTFFormatter.WriteToken(const Token: String; const TokenType: TTokenType);
 var
-  escapedToken, FormatToken: string;
+  escapedToken, FormatToken: String;
 begin
   escapedToken := SetSpecial(Token);
   case TokenType of
@@ -38,9 +38,9 @@ begin
   Write(FormatToken);
 end;
 
-function TRTFFormatter.SetSpecial(const str: string): string;
+function TRTFFormatter.SetSpecial(const str: String): String;
 var
-  i: integer;
+  i: Integer;
 begin
   Result := '';
   for i := 1 to Length(str) do

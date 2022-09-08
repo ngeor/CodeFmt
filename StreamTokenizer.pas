@@ -14,11 +14,11 @@ type
     FReadBuf: PChar;
     FCurrent: PChar;
     FMark: PChar;
-    FPosition: integer;
-    FReadBufSize: integer;
-    function GetCurrent: char;
+    FPosition: Integer;
+    FReadBufSize: Integer;
+    function GetCurrent: Char;
     procedure Mark;
-    function Token: string;
+    function Token: String;
   public
     constructor Create(InputStream: TStream);
     destructor Destroy; override;
@@ -28,35 +28,35 @@ type
 
     { Returns the token that has been read so far and prepares the StreamTokenizer
     for reading the following token. }
-    function TokenAndMark: string;
+    function TokenAndMark: String;
 
     { Returns the next available character without advancing the current position }
-    function PeekNext: char;
+    function PeekNext: Char;
 
     { Returns a string that consists of the next characters without advancing
     the current position }
-    function PeekLength(Count: integer): string;
+    function PeekLength(Count: Integer): String;
 
     { Gets a value indicating whether all the characters have been read or not }
-    function IsEof: boolean;
+    function IsEof: Boolean;
 
     { Gets a value indicating whether the next character is an end of line }
-    function IsEoln: boolean;
+    function IsEoln: Boolean;
 
     { Gets a value indicating whether the current position is equal to the
     marked position }
-    function IsEmptyToken: boolean;
+    function IsEmptyToken: Boolean;
 
     { Advances the current position as long as the character is within the
     validChars set. The first character must be within the firstChar set.
     Returns true if the position was advanced, false otherwise. }
-    function Scan(firstChar, validChars: TSysCharSet): boolean;
+    function Scan(firstChar, validChars: TSysCharSet): Boolean;
 
     { Gets the character at the current position of the reader. }
-    property Current: char read GetCurrent;
+    property Current: Char read GetCurrent;
 
     { Gets the current position in the stream. }
-    property Position: integer read FPosition;
+    property Position: Integer read FPosition;
   end;
 
 implementation
@@ -78,7 +78,7 @@ begin
   FreeMem(FReadBuf);
 end;
 
-function TStreamTokenizer.GetCurrent: char;
+function TStreamTokenizer.GetCurrent: Char;
 begin
   GetCurrent := FCurrent^;
 end;
@@ -94,23 +94,23 @@ begin
   Inc(FPosition);
 end;
 
-function TStreamTokenizer.Token: string;
+function TStreamTokenizer.Token: String;
 var
-  tokenLen: integer;
-  tokenString: string;
+  tokenLen: Integer;
+  tokenString: String;
 begin
   tokenLen := FCurrent - FMark;
   SetString(tokenString, FMark, tokenLen);
   Token := tokenString;
 end;
 
-function TStreamTokenizer.TokenAndMark: string;
+function TStreamTokenizer.TokenAndMark: String;
 begin
   TokenAndMark := Token;
   Mark;
 end;
 
-function TStreamTokenizer.PeekNext: char;
+function TStreamTokenizer.PeekNext: Char;
 begin
   if IsEof then
     PeekNext := #0
@@ -118,22 +118,22 @@ begin
     PeekNext := (FCurrent + 1)^;
 end;
 
-function TStreamTokenizer.IsEof: boolean;
+function TStreamTokenizer.IsEof: Boolean;
 begin
   IsEof := Current = #0;
 end;
 
-function TStreamTokenizer.IsEmptyToken: boolean;
+function TStreamTokenizer.IsEmptyToken: Boolean;
 begin
   IsEmptyToken := FCurrent = FMark;
 end;
 
-function TStreamTokenizer.IsEoln: boolean;
+function TStreamTokenizer.IsEoln: Boolean;
 begin
   IsEoln := Current in [#13, #10];
 end;
 
-function TStreamTokenizer.Scan(firstChar: TSysCharSet; validChars: TSysCharSet): boolean;
+function TStreamTokenizer.Scan(firstChar: TSysCharSet; validChars: TSysCharSet): Boolean;
 begin
   if Current in firstChar then
   begin
@@ -147,10 +147,10 @@ begin
     Scan := False;
 end;
 
-function TStreamTokenizer.PeekLength(Count: integer): string;
+function TStreamTokenizer.PeekLength(Count: Integer): String;
 var
-  buffer: string;
-  i: integer;
+  buffer: String;
+  i: Integer;
 begin
   buffer := '';
   i := 0;

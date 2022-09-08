@@ -18,9 +18,9 @@ type
     procedure HandleMultilineComment;
     procedure HandleChar;
     procedure HandleHexNumber;
-    function IsDiffKey(aToken: string): boolean;
-    function IsDirective(aToken: string): boolean;
-    function IsKeyword(aToken: string): boolean;
+    function IsDiffKey(aToken: String): Boolean;
+    function IsDirective(aToken: String): Boolean;
+    function IsKeyword(aToken: String): Boolean;
   protected
     procedure Scan; override;
   end;
@@ -30,7 +30,7 @@ implementation
 uses TokenTypes;
 
 const
-  PasKeywords: array[0..98] of string =
+  PasKeywords: array[0..98] of String =
     ('ABSOLUTE', 'ABSTRACT', 'AND', 'ARRAY', 'AS', 'ASM', 'ASSEMBLER',
     'AUTOMATED', 'BEGIN', 'CASE', 'CDECL', 'CLASS', 'CONST', 'CONSTRUCTOR',
     'DEFAULT', 'DESTRUCTOR', 'DISPID', 'DISPINTERFACE', 'DIV', 'DO',
@@ -47,11 +47,11 @@ const
     'UNIT', 'UNTIL', 'USES', 'VAR', 'VIRTUAL', 'WHILE', 'WITH', 'WRITE',
     'WRITEONLY', 'XOR');
 
-  PasDirectives: array[0..10] of string =
+  PasDirectives: array[0..10] of String =
     ('AUTOMATED', 'INDEX', 'NAME', 'NODEFAULT', 'READ', 'READONLY',
     'RESIDENT', 'STORED', 'STRINGRECOURCE', 'WRITE', 'WRITEONLY');
 
-  PasDiffKeys: array[0..6] of string =
+  PasDiffKeys: array[0..6] of String =
     ('END', 'FUNCTION', 'PRIVATE', 'PROCEDURE', 'PRODECTED',
     'PUBLIC', 'PUBLISHED');
 
@@ -75,7 +75,7 @@ end;
 *)
 procedure TPascalLexer.HandleAnsiComments;
 
-  function IsEndOfAnsiComment: boolean;
+  function IsEndOfAnsiComment: Boolean;
   begin
     IsEndOfAnsiComment := (StreamTokenizer.Current = '*') and
       (StreamTokenizer.PeekNext = ')');
@@ -165,10 +165,10 @@ begin
     CurrentTokenFound(ttNumber);
 end;
 
-function BinarySearch(hay: array of string; needle: string): boolean;
+function BinarySearch(hay: array of String; needle: String): Boolean;
 var
-  First, Last, I, Compare: integer;
-  Token: string;
+  First, Last, I, Compare: Integer;
+  Token: String;
 begin
   First := Low(hay);
   Last := High(hay);
@@ -191,16 +191,16 @@ begin
   end;
 end;
 
-function TPascalLexer.IsDiffKey(aToken: string): boolean;
+function TPascalLexer.IsDiffKey(aToken: String): Boolean;
 begin
   Result := BinarySearch(PasDiffKeys, aToken);
 end;  { IsDiffKey }
 
-function TPascalLexer.IsDirective(aToken: string): boolean;
+function TPascalLexer.IsDirective(aToken: String): Boolean;
 var
-  First, Last, I, Compare: integer;
-  Token: string;
-  FDiffer: boolean;
+  First, Last, I, Compare: Integer;
+  Token: String;
+  FDiffer: Boolean;
 begin
   First := Low(PasDirectives);
   Last := High(PasDirectives);
@@ -237,14 +237,14 @@ begin
   end;
 end;
 
-function TPascalLexer.IsKeyword(aToken: string): boolean;
+function TPascalLexer.IsKeyword(aToken: String): Boolean;
 begin
   Result := BinarySearch(PasKeywords, aToken);
 end;
 
 procedure TPascalLexer.HandleIdentifier;
 var
-  token: string;
+  token: String;
   tokenType: TTokenType;
 begin
   (* cannot start with number but it can contain one *)
