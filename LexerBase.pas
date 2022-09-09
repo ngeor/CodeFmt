@@ -9,7 +9,7 @@ uses
 
 type
   { A callback method that is called when a token is found. }
-  TLexerTokenFound = procedure(const Token: string;
+  TLexerTokenFound = procedure(const Token: String;
     const TokenType: TTokenType) of object;
 
   { Base class for a lexer }
@@ -48,7 +48,7 @@ procedure HandleSlashesComment(StreamTokenizer: TStreamTokenizer;
 { Handles a single line comment. The comment denoting characters are
 identified by the CommentMark parameter. }
 procedure HandleLineComment(StreamTokenizer: TStreamTokenizer;
-  TokenFound: TLexerTokenFound; CommentMark: string);
+  TokenFound: TLexerTokenFound; CommentMark: String);
 
 implementation
 
@@ -59,7 +59,7 @@ end;
 
 procedure TLexerBase.FormatStream(InputStream: TStream);
 var
-  oldPosition: integer;
+  oldPosition: Integer;
 begin
   FStreamTokenizer := TStreamTokenizer.Create(InputStream);
   try
@@ -123,7 +123,7 @@ begin
 end;
 
 procedure HandleLineComment(StreamTokenizer: TStreamTokenizer;
-  TokenFound: TLexerTokenFound; CommentMark: string);
+  TokenFound: TLexerTokenFound; CommentMark: String);
 begin
   if StreamTokenizer.PeekLength(Length(CommentMark)) = CommentMark then
   begin

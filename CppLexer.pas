@@ -22,7 +22,7 @@ implementation
 uses TokenTypes;
 
 const
-  CppKeyWords: array [0..59] of string =
+  CppKeyWords: array [0..59] of String =
     ('_cs', '_ds', '_es', '_export', '_fastcall',
     '_loadds', '_saveregs', '_seg', '_ss', 'asm',
     'auto', 'break', 'case', 'cdecl', 'char',
@@ -60,9 +60,9 @@ begin
   end;
 end;
 
-function ArrayContains(hay: array of string; needle: string): boolean;
+function ArrayContains(hay: array of String; needle: String): Boolean;
 var
-  i: integer;
+  i: Integer;
 begin
   Result := False;
 
@@ -76,7 +76,7 @@ end;
 
 procedure TCppLexer.HandleIdentifier;
 var
-  token: string;
+  token: String;
   tokenType: TTokenType;
 begin
   if StreamTokenizer.Scan(['a'..'z', 'A'..'Z'], ['a'..'z', 'A'..'Z', '_']) then

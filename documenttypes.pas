@@ -26,12 +26,12 @@ implementation
 
 uses SysUtils;
 
-function IsCppFileExtension(const extension: string): boolean;
+function IsCppFileExtension(const extension: String): Boolean;
 begin
   IsCppFileExtension := (extension = '.cpp') or (extension = '.c') or (extension = '.h');
 end;
 
-function IsPascalFileExtension(const extension: string): boolean;
+function IsPascalFileExtension(const extension: String): Boolean;
 begin
   IsPascalFileExtension := (extension = '.pas') or (extension = '.dpr') or
     (extension = '.lpr');
@@ -39,7 +39,7 @@ end;
 
 function GetDocumentType(const FileName: String): TDocumentType;
 var
-  s: string;
+  s: String;
 begin
   s := ExtractFileExt(FileName);
   if IsCppFileExtension(s) then
@@ -53,4 +53,3 @@ begin
 end;
 
 end.
-

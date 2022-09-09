@@ -40,14 +40,14 @@ type
     procedure SaveDialog1TypeChange(Sender: TObject);
   private
     FDocType: TDocumentType;
-    FCurFileName: string;
+    FCurFileName: String;
     procedure SetDocType(Value: TDocumentType);
-    procedure SetCurFileName(const Value: string);
-    procedure OpenFile(const FileName: string; aDocType: TDocumentType); overload;
+    procedure SetCurFileName(const Value: String);
+    procedure OpenFile(const FileName: String; aDocType: TDocumentType); overload;
     property DocType: TDocumentType read FDocType write SetDocType;
-    property CurFileName: string read FCurFileName write SetCurFileName;
+    property CurFileName: String read FCurFileName write SetCurFileName;
   public
-    procedure OpenFile(const FileName: string); overload;
+    procedure OpenFile(const FileName: String); overload;
   end;
 
 var
@@ -59,7 +59,7 @@ uses frmAbout;
 
 {$R *.lfm}
 
-procedure TMainForm.SetCurFileName(const Value: string);
+procedure TMainForm.SetCurFileName(const Value: String);
 begin
   FCurFileName := Value;
   Statusbar1.SimpleText := Value;
@@ -72,7 +72,7 @@ begin
   FileSaveAs.Enabled := FDocType <> dtNone;
 end;
 
-procedure TMainForm.OpenFile(const FileName: string; aDocType: TDocumentType);
+procedure TMainForm.OpenFile(const FileName: String; aDocType: TDocumentType);
 var
   InputStream: TFileStream;
   OutputStream: TMemoryStream;
@@ -117,13 +117,14 @@ begin
   AboutForm.ShowModal;
 end;
 
-procedure TMainForm.OpenFile(const FileName: string);
+procedure TMainForm.OpenFile(const FileName: String);
 var
   DocumentType: TDocumentType;
 begin
   DocumentType := GetDocumentType(FileName);
   if DocumentType = dtNone then
-    MessageDlg('Αυτή η μορφή δεν υποστηρίζεται', mtError, [mbOK], 0)
+    MessageDlg('Αυτή η μορφή δεν υποστηρίζεται',
+      mtError, [mbOK], 0)
   else
     OpenFile(FileName, DocumentType);
 end;

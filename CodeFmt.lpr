@@ -14,9 +14,9 @@ uses
 
 {$R *.res}
 
-  function RightSeekPos(const substr, s: string): integer;
+  function RightSeekPos(const substr, s: String): Integer;
   var
-    i, k: integer;
+    i, k: Integer;
   begin
     k := Length(substr);
     i := Length(s) - k + 1;
@@ -25,9 +25,9 @@ uses
     Result := i;
   end;
 
-  function GetFormatterType(s: string): TFormatterType;
+  function GetFormatterType(s: String): TFormatterType;
   var
-    toUpper: string;
+    toUpper: String;
   begin
     toUpper := UpperCase(s);
     if toUpper = 'RTF' then
@@ -39,13 +39,13 @@ uses
   end;
 
 const
-  sExt: array [ftHtml..ftRtf] of string = ('.html', '.rtf');
+  sExt: array [ftHtml..ftRtf] of String = ('.html', '.rtf');
 var
-  sFileName: string;
-  sName: string;
-  sFormatted: string;
+  sFileName: String;
+  sName: String;
+  sFormatted: String;
   formatterType: TFormatterType;
-  i: integer;
+  i: Integer;
   InputStream, OutputStream: TFileStream;
 begin
   if (ParamCount = 2) or (ParamCount = 3) then
