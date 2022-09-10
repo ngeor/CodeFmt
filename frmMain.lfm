@@ -68,18 +68,18 @@ object MainForm: TMainForm
   object OpenDialog1: TOpenDialog
     Filter = 'Κώδικας (όλες οι μορφές που υποστηρίζονται)|*.c;*.cpp;*.h;*.pas;*.dpr;.editorconfig|Κώδικας C/C++|*.c;*.cpp;*.h|Κώδικας Pascal|*.pas;*.dpr|EditorConfig|.editorconfig|Όλα τα αρχεία|*.*'
     Options = [ofHideReadOnly, ofPathMustExist, ofFileMustExist]
-    Left = 151
-    Top = 9
+    Left = 104
+    Top = 8
   end
   object SaveDialog1: TSaveDialog
     Filter = 'Μορφή εμπλουτισμένου κειμένου|*.rtf|Ιστοσελίδα|*.html'
     OnTypeChange = SaveDialog1TypeChange
     Options = [ofOverwritePrompt, ofHideReadOnly]
-    Left = 169
+    Left = 160
     Top = 9
   end
   object MainMenu1: TMainMenu
-    Left = 187
+    Left = 216
     Top = 9
     object FileMenu: TMenuItem
       Caption = '&Αρχείο'
@@ -101,6 +101,11 @@ object MainForm: TMainForm
       object ToolsPref: TMenuItem
         Caption = '&Προτιμήσεις...'
         OnClick = ToolsPrefClick
+      end
+      object mnuTest: TMenuItem
+        Caption = 'test'
+        ShortCut = 115
+        OnClick = mnuTestClick
       end
     end
     object HelpMenu: TMenuItem

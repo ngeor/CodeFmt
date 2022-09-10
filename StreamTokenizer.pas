@@ -595,9 +595,9 @@ begin
     Result.Data := Token;
   end
   else
+  begin
     Source.Undo(Token);
     Result.Success := False;
-  begin
   end
 end;
 
@@ -854,6 +854,7 @@ var
   Parser: TParser<TSimplePairs>;
   Result: TParseResult<TSimplePairs>;
   Pairs: TSimplePairs;
+  i: Integer;
 begin
   Parser := CreateSimpleParser;
   Result := Parser.Parse(
@@ -871,7 +872,15 @@ begin
       )
     )
   );
-  Pairs := Result.Data;
+  if Result.Success then
+  begin
+    Pairs := Result.Data;
+    i := 0;
+  end
+  else
+  begin
+    i := 0;
+  end;
 end;
 
 end.
