@@ -41,7 +41,7 @@
         <PackageName Value="LCL"/>
       </Item2>
     </RequiredPackages>
-    <Units Count="17">
+    <Units Count="18">
       <Unit0>
         <Filename Value="CodeFmt.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -120,6 +120,11 @@
         <IsPartOfProject Value="True"/>
         <UnitName Value="CharReaders"/>
       </Unit16>
+      <Unit17>
+        <Filename Value="recognizers.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="Recognizers"/>
+      </Unit17>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

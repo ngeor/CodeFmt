@@ -63,7 +63,7 @@ procedure TestParser;
 
 implementation
 
-uses CharReaders, CharOrNewLineReaders, Tokenizers;
+uses CharReaders, CharOrNewLineReaders, Tokenizers, Recognizers;
 
 constructor TStreamTokenizer.Create(InputStream: TStream);
 var
@@ -173,87 +173,16 @@ end;
 type
   TSampleTokenKind = (stkDigits, stkLetters, stkOther);
 
-function IsDigit(Ch: Char): Boolean;
-begin
-  Result := (Ch >= '0') and (Ch <= '9');
-end;
-
-function IsLetter(Ch: Char): Boolean;
-begin
-  Result := ((Ch >= 'a') and (Ch <= 'z')) or ((Ch >= 'A') and (Ch <= 'Z'));
-end;
-
-type
-  TCharPredicate = function(Ch: Char): Boolean;
-  TPredicateRecognizer = class(TTokenRecognizer)
-  private
-    FPredicate: TCharPredicate;
-  public
-    constructor Create(Predicate: TCharPredicate);
-    destructor Destroy; override;
-    function Recognize(Buffer: TCharOrNewLineArray): Boolean; override;
-  end;
-
-constructor TPredicateRecognizer.Create(Predicate: TCharPredicate);
-begin
-  FPredicate := Predicate;
-end;
-
-destructor TPredicateRecognizer.Destroy;
-begin
-  inherited Destroy;
-end;
-
-function TPredicateRecognizer.Recognize(Buffer: TCharOrNewLineArray): Boolean;
-var
-  i: Integer;
-begin
-  i := Low(Buffer);
-  while (i <= High(Buffer)) and (Buffer[i].Kind = ckChar) and (FPredicate(Buffer[i].Ch)) do
-    Inc(i);
-  Result := i > High(Buffer);
-end;
-
-type
-  TAnyRecognizer = class(TTokenRecognizer)
-  private
-  public
-    constructor Create;
-    destructor Destroy; override;
-    function Recognize(Buffer: TCharOrNewLineArray): Boolean; override;
-  end;
-
-constructor TAnyRecognizer.Create;
-begin
-end;
-
-destructor TAnyRecognizer.Destroy;
-begin
-  inherited Destroy;
-end;
-
-function TAnyRecognizer.Recognize(Buffer: TCharOrNewLineArray): Boolean;
-begin
-  // recognize any single "LineRead"
-  Result := Length(Buffer) = 1;
-end;
-
-function CreateDigitsRecognizer(): TTokenRecognizer;
-begin
-  Result := TPredicateRecognizer.Create(IsDigit);
-end;
-
-function CreateLettersRecognizer(): TTokenRecognizer;
-begin
-  Result := TPredicateRecognizer.Create(IsLetter);
-end;
-
 function CreateSampleTokenizer(LineReader: TPushBackCharOrNewLineReader): TTokenizer;
 begin
   Result := TTokenizer.Create(
     LineReader,
     // order must match TSampleTokenKind enum
-    [CreateDigitsRecognizer, CreateLettersRecognizer, TAnyRecognizer.Create]
+    [
+      TPredicateRecognizer.Create(IsDigit),
+      TPredicateRecognizer.Create(IsLetter),
+      TAnyRecognizer.Create
+    ]
   );
 end;
 

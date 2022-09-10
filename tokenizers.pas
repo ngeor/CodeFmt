@@ -4,7 +4,7 @@ unit Tokenizers;
 
 interface
 
-uses CharOrNewLineReaders;
+uses CharOrNewLineReaders, Recognizers;
 
 type
   TRowCol = record
@@ -12,24 +12,18 @@ type
     Col: Word;
   end;
 
-  TTokenPosition = record
+  TPosition = record
     Start: TRowCol;
     Finish: TRowCol;
   end;
 
   TToken = record
     Data: String;
+    // if < 0, token is not matched
+    // if >= 0, it's the recognizer that found it
     Kind: Integer;
-    Position: TTokenPosition;
+    Position: TPosition;
   end;
-
-  TCharOrNewLineArray = array of TCharOrNewLine;
-
-  TTokenRecognizer = class
-    function Recognize(Buffer: TCharOrNewLineArray): Boolean; virtual; abstract;
-  end;
-
-  TTokenRecognizers = array of TTokenRecognizer;
 
   TTokenizer = class
   private
