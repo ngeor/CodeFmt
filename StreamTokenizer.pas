@@ -61,7 +61,7 @@ type
 
 implementation
 
-uses Readers;
+uses Readers, Tokenizers;
 
 constructor TStreamTokenizer.Create(InputStream: TStream);
 var
@@ -166,7 +166,7 @@ begin
   Result := buffer;
 end;
 
-
+{
 type
   TParseSource = class
   private
@@ -270,12 +270,12 @@ var
   NextResult: TParseResult<Char>;
   OriginalSource: TParseSource;
 begin
-  { keep a copy }
+  // keep a copy
   OriginalSource := Source.Copy;
   NextResult := FParser.Parse(Source);
   if NextResult.Success then
   begin
-    { the inner parser has freed `Source` at this point }
+    // the inner parser has freed `Source` at this point
     NextResult.Success := FPredicate(NextResult.Data);
     if NextResult.Success then
     begin
@@ -284,9 +284,8 @@ begin
     end
     else
     begin
-         { Need to rollback to the original parse source.
-         Source is not available because the inner parser has freed it.
-         }
+      // Need to rollback to the original parse source.
+      // Source is not available because the inner parser has freed it.
       Result := NextResult;
       Result.Remaining := OriginalSource;
       NextResult.Remaining.Free;
@@ -347,7 +346,7 @@ begin
   Result := TManyParser.Create(TIfParser.Create(TCharParser.Create, IsWhiteSpace));
 end;
 
-{ editor config line comment parser }
+(* editor config line comment parser *)
 
 function IsEol(ch: Char): Boolean;
 begin
@@ -450,128 +449,94 @@ begin
   Result := TAndParser.Create(TCharToStringParser.Create(PoundParser),
     UntilEolParser);
 end;
-
-
-type
-  TPosition = record
-    Row: Integer;
-    Col: Integer;
-  end;
-
-  TToken = record
-    Data: String;
-    Kind: Integer;
-    Position: TPosition;
-  end;
-
-type
-  TTokenRecognizer = function(Buffer: TLineReads): Boolean;
-  TTokenRecognizers = array of TTokenRecognizer;
-
-  TTokenizer = class
-  private
-    FLineReader: TLineReader;
-    FRecognizers: TTokenRecognizers;
-    function Recognize(Buffer: TLineReads): Integer;
-  public
-    constructor Create(LineReader: TLineReader; Recognizers: TTokenRecognizers);
-    destructor Destroy; override;
-    function Read: TToken;
-  end;
-
-constructor TTokenizer.Create(LineReader: TLineReader; Recognizers: TTokenRecognizers);
-begin
-  FLineReader := LineReader;
-  FRecognizers := Recognizers;
-end;
-
-destructor TTokenizer.Destroy;
-begin
-  FLineReader.Free;
-  inherited Destroy;
-end;
-
-function TTokenizer.Read: TToken;
-var
-  Buffer: TLineReads;
-  Next: TLineRead;
-  Size: Integer;
-  RecognizerIndex: Integer;
-  NextRecognizerIndex: Integer;
-  NoMatchOrEof: Boolean;
-begin
-  Size := 0;
-  RecognizerIndex := -1;
-  NoMatchOrEof := False;
-  repeat
-    Next := FLineReader.Read;
-    if Next.HasValue then
-    begin
-      { add read character to buffer}
-      Inc(Size);
-      SetLength(Buffer, Size);
-      Buffer[Size - 1] := Next;
-
-      { find which recognizer can work with the buffer, if any }
-      NextRecognizerIndex := Recognize(Buffer);
-      if NextRecognizerIndex = -1 then
-      begin
-        NoMatchOrEof := True;
-        // TODO: push back Next into stream
-      end
-      else
-      begin
-        RecognizerIndex := NextRecognizerIndex;
-      end
-    end
-    else
-    begin
-      // EOF
-      NoMatchOrEof := True;
-    end
-  until NoMatchOrEof;
-  Result.Kind := RecognizerIndex;
-  // TODO capture rest of Result fields
-end;
-
-function TTokenizer.Recognize(Buffer: TLineReads): Integer;
-var
-  i: Integer;
-begin
-  i := Low(FRecognizers);
-  while (i <= High(FRecognizers)) and (not FRecognizers[i](Buffer)) do
-    Inc(i);
-  if i <= High(FRecognizers) then
-    Result := i
-  else
-    Result := -1
-end;
+}
 
 { Sample implementation for TTokenizer }
 
 type
   TSampleTokenKind = (stkDigits, stkLetters, stkOther);
 
-function IsDigit(Ch: Char): Boolean; overload;
+function IsDigit(Ch: Char): Boolean;
 begin
   Result := (Ch >= '0') and (Ch <= '9');
 end;
 
-function IsDigit1(Buffer: TLineReads): Boolean; overload;
+function IsLetter(Ch: Char): Boolean;
+begin
+  Result := ((Ch >= 'a') and (Ch <= 'z')) or ((Ch >= 'A') and (Ch <= 'Z'));
+end;
+
+type
+  TCharPredicate = function(Ch: Char): Boolean;
+  TPredicateRecognizer = class(TTokenRecognizer)
+  private
+    FPredicate: TCharPredicate;
+  public
+    constructor Create(Predicate: TCharPredicate);
+    destructor Destroy; override;
+    function Recognize(Buffer: TLineReads): Boolean; override;
+  end;
+
+constructor TPredicateRecognizer.Create(Predicate: TCharPredicate);
+begin
+  FPredicate := Predicate;
+end;
+
+destructor TPredicateRecognizer.Destroy;
+begin
+  inherited Destroy;
+end;
+
+function TPredicateRecognizer.Recognize(Buffer: TLineReads): Boolean;
 var
   i: Integer;
 begin
   i := Low(Buffer);
-  while (i <= High(Buffer)) and (Buffer[i].IsChar(IsDigit)) do
+  while (i <= High(Buffer)) and (Buffer[i].HasValue) and (not Buffer[i].IsEol) and (FPredicate(Buffer[i].Value)) do
     Inc(i);
   Result := i > High(Buffer);
 end;
 
-function CreateSampleTokenizer(LineReader: TLineReader): TTokenizer;
+type
+  TAnyRecognizer = class(TTokenRecognizer)
+  private
+  public
+    constructor Create;
+    destructor Destroy; override;
+    function Recognize(Buffer: TLineReads): Boolean; override;
+  end;
+
+constructor TAnyRecognizer.Create;
+begin
+end;
+
+destructor TAnyRecognizer.Destroy;
+begin
+  inherited Destroy;
+end;
+
+function TAnyRecognizer.Recognize(Buffer: TLineReads): Boolean;
+begin
+  // recognize any single "LineRead"
+  Result := Length(Buffer) = 1;
+end;
+
+function CreateDigitsRecognizer(): TTokenRecognizer;
+begin
+  Result := TPredicateRecognizer.Create(IsDigit);
+end;
+
+function CreateLettersRecognizer(): TTokenRecognizer;
+begin
+  Result := TPredicateRecognizer.Create(IsLetter);
+end;
+
+function CreateSampleTokenizer(LineReader: TPushBackLineReader): TTokenizer;
 begin
   Result := TTokenizer.Create(
     LineReader,
-    [IsDigit1]
+    // order must match TSampleTokenKind enum
+    [CreateDigitsRecognizer, CreateLettersRecognizer, TAnyRecognizer.Create]
   );
 end;
 

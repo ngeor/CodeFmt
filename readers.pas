@@ -55,11 +55,6 @@ type
 
   TCharPredicate = function(Ch: Char): Boolean;
 
-  TLineReadHelper = record helper for TLineRead
-    function IsChar(Ch: Char): Boolean; overload;
-    function IsChar(Predicate: TCharPredicate): Boolean; overload;
-  end;
-
   TLineReader = class
   private
     FPushBackReader: TPushBackReader;
@@ -68,6 +63,18 @@ type
     destructor Destroy; override;
     function Read: TLineRead;
   end;
+
+  type
+    TPushBackLineReader = class
+    private
+      FLineReader: TLineReader;
+      FPrevious: TLineRead;
+    public
+      constructor Create(LineReader: TLineReader);
+      destructor Destroy; override;
+      function Read: TLineRead;
+      procedure UnRead(LineRead: TLineRead);
+    end;
 
 implementation
 
@@ -131,16 +138,6 @@ begin
   end;
 end;
 
-function TLineReadHelper.IsChar(Ch: Char): Boolean;
-begin
-  Result := HasValue and (not IsEol) and (Value = Ch);
-end;
-
-function TLineReadHelper.IsChar(Predicate: TCharPredicate): Boolean;
-begin
-  Result := HasValue and (not IsEol) and Predicate(Value);
-end;
-
 constructor TLineReader.Create(PushBackReader: TPushBackReader);
 begin
   FPushBackReader := PushBackReader;
@@ -195,6 +192,39 @@ begin
   end
   else
     Result.HasValue := False
+end;
+
+constructor TPushBackLineReader.Create(LineReader: TLineReader);
+begin
+  FLineReader := LineReader;
+  FPrevious.HasValue := False;
+end;
+
+destructor TPushBackLineReader.Destroy;
+begin
+  FLineReader.Free;
+  inherited Destroy;
+end;
+
+function TPushBackLineReader.Read: TLineRead;
+begin
+  if FPrevious.HasValue then
+  begin
+    Result := FPrevious;
+    FPrevious.HasValue := False;
+  end
+  else
+    Result := FLineReader.Read;
+end;
+
+procedure TPushBackLineReader.UnRead(LineRead: TLineRead);
+begin
+  if FPrevious.HasValue then
+    raise Exception.Create('Buffer overflow')
+  else if not LineRead.HasValue then
+    raise Exception.Create('Invalid argument')
+  else
+    FPrevious := LineRead;
 end;
 
 end.
