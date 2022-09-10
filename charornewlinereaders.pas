@@ -62,13 +62,13 @@ begin
   First := FPushBackReader.Read;
   if First.HasValue then
   begin
-    if First.Value = '\r' then
+    if First.Value = #13 then
     begin
       Result.Kind := ckEol;
       Second := FPushBackReader.Read;
       if Second.HasValue then
       begin
-        if Second.Value = '\n' then
+        if Second.Value = #10 then
         begin
           Result.NewLineKind := nlCRLF;
         end
@@ -83,7 +83,7 @@ begin
         Result.NewLineKind := nlCR;
       end
     end
-    else if First.Value = '\n' then
+    else if First.Value = #10 then
     begin
       Result.Kind := ckEol;
       Result.NewLineKind := nlLF;

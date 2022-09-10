@@ -72,7 +72,7 @@ end;
 
 function IsWhiteSpace(Ch: Char): Boolean;
 begin
-  Result := (Ch = ' ') or (Ch = '\t');
+  Result := (Ch = ' ') or (Ch = #9);
 end;
 
 (* Predicate *)

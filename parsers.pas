@@ -5,7 +5,7 @@ unit Parsers;
 interface
 
 uses
-  Classes, SysUtils, Tokenizers;
+  Classes, SysUtils, Tokenizers, Types;
 
 type
   TParseResult<T> = record
@@ -23,9 +23,11 @@ type
 
   TTokenKindParser = class(TParser<TToken>)
   private
-    FTokenKind: Word;
+    FTokenKinds: TWordDynArray;
+    function Matches(TokenKind: Word): Boolean;
   public
-    constructor Create(TokenKind: Word);
+    constructor Create(TokenKind: Word); overload;
+    constructor Create(TokenKinds: TWordDynArray); overload;
     destructor Destroy; override;
     function Parse(Source: TUndoTokenizer): TParseResult<TToken>; override;
     procedure Undo(Source: TUndoTokenizer; Data: TToken); override;
@@ -49,8 +51,8 @@ type
     procedure Undo(Source: TUndoTokenizer; Data: TPair<L, R>); override;
   end;
 
-function Seq<L, R>(Left: TParser<L>; Right: TParser<R>): TParser<TPair<L, R>>;
-
+function Seq<L, R>(Left: TParser<L>; Right: TParser<R>): TParser<TPair<L, R>>; overload;
+function Seq(Left: TParser<TTokenLinkedList>; Right: TParser<TTokenLinkedList>): TParser<TTokenLinkedList>; overload;
 type
   (* Map *)
   TMapper<T, U> = function(x : T): U;
@@ -91,13 +93,40 @@ type
     procedure Undo(Source: TUndoTokenizer; Data: T); override;
   end;
 
+type
+  TMapTokenToTokenListParser = class(TParser<TTokenLinkedList>)
+  private
+    FParser: TParser<TToken>;
+  public
+    constructor Create(Parser: TParser<TToken>);
+    destructor Destroy; override;
+    function Parse(Source: TUndoTokenizer): TParseResult<TTokenLinkedList>; override;
+    procedure Undo(Source: TUndoTokenizer; Data: TTokenLinkedList); override;
+  end;
+
+  TManyTokensParser = class(TParser<TTokenLinkedList>)
+  private
+    FParser: TParser<TToken>;
+  public
+    constructor Create(Parser: TParser<TToken>);
+    destructor Destroy; override;
+    function Parse(Source: TUndoTokenizer): TParseResult<TTokenLinkedList>; override;
+    procedure Undo(Source: TUndoTokenizer; Data: TTokenLinkedList); override;
+  end;
+
+
 implementation
 
 (* TokenKind *)
 
 constructor TTokenKindParser.Create(TokenKind: Word);
 begin
-  FTokenKind := TokenKind;
+  FTokenKinds := [TokenKind];
+end;
+
+constructor TTokenKindParser.Create(TokenKinds: TWordDynArray);
+begin
+  FTokenKinds := TokenKinds;
 end;
 
 destructor TTokenKindParser.Destroy;
@@ -110,7 +139,7 @@ var
   Token: TToken;
 begin
   Token := Source.Read;
-  if Token.Kind = FTokenKind then
+  if Matches(Token.Kind) then
   begin
     Result.Success := True;
     Result.Data := Token;
@@ -125,6 +154,16 @@ end;
 procedure TTokenKindParser.Undo(Source: TUndoTokenizer; Data: TToken);
 begin
   Source.Undo(Data);
+end;
+
+function TTokenKindParser.Matches(TokenKind: Word): Boolean;
+var
+  i: Integer;
+begin
+  i := Low(FTokenKinds);
+  while (i <= High(FTokenKinds)) and (FTokenKinds[i] <> TokenKind) do
+    Inc(i);
+  Result := i <= High(FTokenKinds);
 end;
 
 (* And *)
@@ -175,9 +214,27 @@ begin
   FLeft.Undo(Source, Data.Left);
 end;
 
-function Seq<L, R>(Left: TParser<L>; Right: TParser<R>): TParser<TPair<L, R>>;
+function Seq<L, R>(Left: TParser<L>; Right: TParser<R>): TParser<TPair<L, R>>; overload;
 begin
   Result := TAndParser<L, R>.Create(Left, Right);
+end;
+
+type
+  TListPair = TPair<TTokenLinkedList, TTokenLinkedList>;
+function MergeLists(Pair: TListPair): TTokenLinkedList;
+begin
+  Result := Pair.Left;
+  while not Pair.Right.IsEmpty do
+    Result.Push(Pair.Right.Pop);
+  Pair.Right.Free;
+end;
+
+function Seq(Left: TParser<TTokenLinkedList>; Right: TParser<TTokenLinkedList>): TParser<TTokenLinkedList>; overload;
+begin
+  Result := TMapParser<TListPair, TTokenLinkedList>.Create(
+    TAndParser<TTokenLinkedList, TTokenLinkedList>.Create(Left, Right),
+    MergeLists
+  );
 end;
 
 (* Map *)
@@ -301,6 +358,72 @@ end;
 procedure TOrParser<T>.Undo(Source: TUndoTokenizer; Data: T);
 begin
   FLeft.Undo(Source, Data); // TODO: remember which parser was actually used?
+end;
+
+constructor TMapTokenToTokenListParser.Create(Parser: TParser<TToken>);
+begin
+  FParser := Parser;
+end;
+
+destructor TMapTokenToTokenListParser.Destroy;
+begin
+  FParser.Free;
+  inherited Destroy;
+end;
+
+function TMapTokenToTokenListParser.Parse(Source: TUndoTokenizer): TParseResult<TTokenLinkedList>;
+var
+  Temp: TParseResult<TToken>;
+begin
+  Temp := FParser.Parse(Source);
+  if Temp.Success then
+  begin
+    Result.Success := True;
+    Result.Data := TTokenLinkedList.Create;
+    Result.Data.Push(Temp.Data);
+  end
+  else
+    Result.Success := False
+end;
+
+procedure TMapTokenToTokenListParser.Undo(Source: TUndoTokenizer; Data: TTokenLinkedList);
+begin
+  while not Data.IsEmpty do
+    FParser.Undo(Source, Data.Pop);
+  Data.Free;
+end;
+
+constructor TManyTokensParser.Create(Parser: TParser<TToken>);
+begin
+  FParser := Parser;
+end;
+
+destructor TManyTokensParser.Destroy;
+begin
+  FParser.Free;
+  inherited Destroy;
+end;
+
+function TManyTokensParser.Parse(Source: TUndoTokenizer): TParseResult<TTokenLinkedList>;
+var
+  Temp: TParseResult<TToken>;
+begin
+  Result.Success := True;
+  Result.Data := TTokenLinkedList.Create;
+  repeat
+    Temp := FParser.Parse(Source);
+    if Temp.Success then
+    begin
+      Result.Data.Push(Temp.Data);
+    end;
+  until not Temp.Success;
+end;
+
+procedure TManyTokensParser.Undo(Source: TUndoTokenizer; Data: TTokenLinkedList);
+begin
+  while not Data.IsEmpty do
+    FParser.Undo(Source, Data.Pop);
+  Data.Free;
 end;
 
 end.

@@ -49,7 +49,7 @@ end;
 
 destructor TStreamCharReader.Destroy;
 begin
-  FStream.Free;
+  // FStream.Free;
   inherited Destroy;
 end;
 

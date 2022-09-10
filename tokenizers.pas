@@ -145,9 +145,9 @@ begin
         Inc(FRowCol.Row);
         FRowCol.Col := 1;
         case Next.NewLineKind of
-          nlCR: Result.Text := Result.Text + '\r';
-          nlLF: Result.Text := Result.Text + '\n';
-          nlCRLF: Result.Text := Result.Text + '\r\n';
+          nlCR: Result.Text := Result.Text + #13;
+          nlLF: Result.Text := Result.Text + #10;
+          nlCRLF: Result.Text := Result.Text + #13 + #10;
         end;
       end
       else

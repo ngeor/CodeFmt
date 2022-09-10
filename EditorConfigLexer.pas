@@ -84,13 +84,14 @@ begin
     TPredicateRecognizer.Create(IsDigit),
     // 3: T_POUND
     TNeedleRecognizer.Create('#'),
-    // 4: T_SYMBOL
-    TNeedleRecognizer.Create('[]=*'),
-    // 5: T_IDENTIFIER
+    // 4: T_LEFT_BRACKET
+    TNeedleRecognizer.Create('['),
+    // 5: T_RIGHT_BRACKET
+    TNeedleRecognizer.Create(']'),
+    // 6: T_IDENTIFIER
     TLeadingPredicateRecognizer.Create(IsLetter, IsIdentifierRemaining),
-    // 6: T_UNKNOWN
-    TAnyRecognizer.Create
-  ];
+    // 7: T_UNKNOWN
+    TAnyRecognizer.Create];
 end;
 
 type
@@ -108,13 +109,36 @@ begin
   Next := Source.Read;
   case Next.Kind of
     -1: Result.Success := False;
-    0: begin Result.Success := True; Result.Data.Text := Next.Text; Result.Data.Kind := ttCRLF; end;
-    1: begin Result.Success := True; Result.Data.Text := Next.Text; Result.Data.Kind := ttSpace; end;
-    2: begin Result.Success := True; Result.Data.Text := Next.Text; Result.Data.Kind := ttNumber; end;
-    4: begin Result.Success := True; Result.Data.Text := Next.Text; Result.Data.Kind := ttSymbol; end;
-    5: begin Result.Success := True; Result.Data.Text := Next.Text; Result.Data.Kind := ttIdentifier; end;
-    6: begin Result.Success := True; Result.Data.Text := Next.Text; Result.Data.Kind := ttUnknown; end;
-    else begin Result.Success := False; Source.Undo(Next); end;
+    0: begin
+      Result.Success := True;
+      Result.Data.Text := Next.Text;
+      Result.Data.Kind := ttCRLF;
+    end;
+    1: begin
+      Result.Success := True;
+      Result.Data.Text := Next.Text;
+      Result.Data.Kind := ttSpace;
+    end;
+    2: begin
+      Result.Success := True;
+      Result.Data.Text := Next.Text;
+      Result.Data.Kind := ttNumber;
+    end;
+    6: begin
+      Result.Success := True;
+      Result.Data.Text := Next.Text;
+      Result.Data.Kind := ttIdentifier;
+    end;
+    7: begin
+      Result.Success := True;
+      Result.Data.Text := Next.Text;
+      Result.Data.Kind := ttUnknown;
+    end;
+    else
+    begin
+      Result.Success := False;
+      Source.Undo(Next);
+    end;
   end;
 end;
 
@@ -142,6 +166,8 @@ begin
     begin
       Buffer := Buffer + Next.Text;
     end
+    else if Next.Kind = 0 { eol } then
+      Source.Undo(Next);
   until Next.Kind <= 0;
   Result.Success := True;
   Result.Data := Buffer;
@@ -161,6 +187,33 @@ end;
 type
   TTokenAndString = TPair<TToken, String>;
 
+// [test]
+function SectionMapper(List: TTokenLinkedList): TFmt;
+var
+  Buffer: String;
+begin
+  Buffer := '';
+  while not List.IsEmpty do
+    Buffer := Buffer + List.Pop.Text;
+  List.Free;
+  Result.Kind := ttDirective; // just to see it bold
+  Result.Text := Buffer;
+end;
+
+function SectionParser: TParser<TFmt>;
+begin
+  Result := Map<TTokenLinkedList, TFmt>(
+    Seq(
+      Seq(
+        TMapTokenToTokenListParser.Create(TTokenKindParser.Create(4)),
+        TManyTokensParser.Create(TTokenKindParser.Create([1, 2, 6, 7]))
+      ),
+      TMapTokenToTokenListParser.Create(TTokenKindParser.Create(5))
+    ),
+    SectionMapper
+  );
+end;
+
 function CommentParser: TParser<TFmt>;
 begin
   Result := Map<TTokenAndString, TFmt>(
@@ -176,7 +229,10 @@ function CreateFmtParser: TParser<TFmt>;
 begin
   Result := TOrParser<TFmt>.Create(
     CommentParser,
-    TSimpleParser.Create
+    TOrParser<TFmt>.Create(
+      SectionParser,
+      TSimpleParser.Create
+    )
   );
 end;
 
