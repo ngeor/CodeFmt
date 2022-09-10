@@ -13,12 +13,12 @@ type
     Value: Char;
   end;
 
-  TReader = class
+  TCharReader = class
   public
     function Read: TOptChar; virtual; abstract;
   end;
 
-  TStreamReader = class(TReader)
+  TStreamCharReader = class(TCharReader)
   private
     FStream: TStream;
   public
@@ -27,12 +27,12 @@ type
     function Read: TOptChar; override;
   end;
 
-  TPushBackReader = class(TReader)
+  TPushBackCharReader = class(TCharReader)
   private
-    FReader: TReader;
+    FReader: TCharReader;
     FBuffer: TOptChar;
   public
-    constructor Create(Reader: TReader);
+    constructor Create(Reader: TCharReader);
     destructor Destroy; override;
     function Read: TOptChar; override;
     procedure UnRead(Ch: Char);
@@ -40,18 +40,18 @@ type
 
 implementation
 
-constructor TStreamReader.Create(Stream: TStream);
+constructor TStreamCharReader.Create(Stream: TStream);
 begin
   FStream := Stream;
 end;
 
-destructor TStreamReader.Destroy;
+destructor TStreamCharReader.Destroy;
 begin
   FStream.Free;
   inherited Destroy;
 end;
 
-function TStreamReader.Read: TOptChar;
+function TStreamCharReader.Read: TOptChar;
 var
   Buffer: array [0..1] of Char;
   BytesRead: Integer;
@@ -66,19 +66,19 @@ begin
     Result.HasValue := False;
 end;
 
-constructor TPushBackReader.Create(Reader: TReader);
+constructor TPushBackCharReader.Create(Reader: TCharReader);
 begin
   FReader := Reader;
   FBuffer.HasValue := False;
 end;
 
-destructor TPushBackReader.Destroy;
+destructor TPushBackCharReader.Destroy;
 begin
   FReader.Free;
   inherited Destroy;
 end;
 
-function TPushBackReader.Read: TOptChar;
+function TPushBackCharReader.Read: TOptChar;
 begin
   if FBuffer.HasValue then
   begin
@@ -89,7 +89,7 @@ begin
     Result := FReader.Read;
 end;
 
-procedure TPushBackReader.UnRead(Ch: Char);
+procedure TPushBackCharReader.UnRead(Ch: Char);
 begin
   if FBuffer.HasValue then
     raise Exception.Create('Buffer overflow')

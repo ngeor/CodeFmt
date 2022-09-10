@@ -63,7 +63,7 @@ procedure TestParser;
 
 implementation
 
-uses CharReaders, Readers, Tokenizers;
+uses CharReaders, CharOrNewLineReaders, Tokenizers;
 
 constructor TStreamTokenizer.Create(InputStream: TStream);
 var
@@ -191,7 +191,7 @@ type
   public
     constructor Create(Predicate: TCharPredicate);
     destructor Destroy; override;
-    function Recognize(Buffer: TLineReads): Boolean; override;
+    function Recognize(Buffer: TCharOrNewLineArray): Boolean; override;
   end;
 
 constructor TPredicateRecognizer.Create(Predicate: TCharPredicate);
@@ -204,7 +204,7 @@ begin
   inherited Destroy;
 end;
 
-function TPredicateRecognizer.Recognize(Buffer: TLineReads): Boolean;
+function TPredicateRecognizer.Recognize(Buffer: TCharOrNewLineArray): Boolean;
 var
   i: Integer;
 begin
@@ -220,7 +220,7 @@ type
   public
     constructor Create;
     destructor Destroy; override;
-    function Recognize(Buffer: TLineReads): Boolean; override;
+    function Recognize(Buffer: TCharOrNewLineArray): Boolean; override;
   end;
 
 constructor TAnyRecognizer.Create;
@@ -232,7 +232,7 @@ begin
   inherited Destroy;
 end;
 
-function TAnyRecognizer.Recognize(Buffer: TLineReads): Boolean;
+function TAnyRecognizer.Recognize(Buffer: TCharOrNewLineArray): Boolean;
 begin
   // recognize any single "LineRead"
   Result := Length(Buffer) = 1;
@@ -248,7 +248,7 @@ begin
   Result := TPredicateRecognizer.Create(IsLetter);
 end;
 
-function CreateSampleTokenizer(LineReader: TPushBackLineReader): TTokenizer;
+function CreateSampleTokenizer(LineReader: TPushBackCharOrNewLineReader): TTokenizer;
 begin
   Result := TTokenizer.Create(
     LineReader,
@@ -575,10 +575,10 @@ begin
   Result := Parser.Parse(
     TUndoTokenizer.Create(
       CreateSampleTokenizer(
-        TPushBackLineReader.Create(
-          TLineReader.Create(
-            TPushBackReader.Create(
-              TStreamReader.Create(
+        TPushBackCharOrNewLineReader.Create(
+          TCharOrNewLineReader.Create(
+            TPushBackCharReader.Create(
+              TStreamCharReader.Create(
                 TStringStream.Create('abc123def456')
               )
             )

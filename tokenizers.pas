@@ -4,7 +4,7 @@ unit Tokenizers;
 
 interface
 
-uses Readers;
+uses CharOrNewLineReaders;
 
 type
   TRowCol = record
@@ -24,19 +24,19 @@ type
   end;
 
   TTokenRecognizer = class
-    function Recognize(Buffer: TLineReads): Boolean; virtual; abstract;
+    function Recognize(Buffer: TCharOrNewLineArray): Boolean; virtual; abstract;
   end;
 
   TTokenRecognizers = array of TTokenRecognizer;
 
   TTokenizer = class
   private
-    FLineReader: TPushBackLineReader;
+    FLineReader: TPushBackCharOrNewLineReader;
     FRecognizers: TTokenRecognizers;
     FRowCol: TRowCol;
-    function Recognize(Buffer: TLineReads): Integer;
+    function Recognize(Buffer: TCharOrNewLineArray): Integer;
   public
-    constructor Create(LineReader: TPushBackLineReader; Recognizers: TTokenRecognizers);
+    constructor Create(LineReader: TPushBackCharOrNewLineReader; Recognizers: TTokenRecognizers);
     destructor Destroy; override;
     function Read: TToken;
   end;
@@ -60,7 +60,7 @@ type
 
 implementation
 
-constructor TTokenizer.Create(LineReader: TPushBackLineReader; Recognizers: TTokenRecognizers);
+constructor TTokenizer.Create(LineReader: TPushBackCharOrNewLineReader; Recognizers: TTokenRecognizers);
 begin
   FLineReader := LineReader;
   FRecognizers := Recognizers;
@@ -83,8 +83,8 @@ end;
 
 function TTokenizer.Read: TToken;
 var
-  Buffer: TLineReads;
-  Next: TLineRead;
+  Buffer: TCharOrNewLineArray;
+  Next: TCharOrNewLine;
   Size: Integer;
   RecognizerIndex: Integer;
   NextRecognizerIndex: Integer;
@@ -135,10 +135,10 @@ begin
       begin
         Inc(FRowCol.Row);
         FRowCol.Col := 1;
-        case Next.Kind of
-          leCR: Result.Data := Result.Data + '\r';
-          leLF: Result.Data := Result.Data + '\n';
-          leCRLF: Result.Data := Result.Data + '\r\n';
+        case Next.NewLineKind of
+          nlCR: Result.Data := Result.Data + '\r';
+          nlLF: Result.Data := Result.Data + '\n';
+          nlCRLF: Result.Data := Result.Data + '\r\n';
         end;
       end
       else
@@ -151,7 +151,7 @@ begin
   end;
 end;
 
-function TTokenizer.Recognize(Buffer: TLineReads): Integer;
+function TTokenizer.Recognize(Buffer: TCharOrNewLineArray): Integer;
 var
   i: Integer;
 begin

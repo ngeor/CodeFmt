@@ -106,9 +106,9 @@
         <UnitName Value="DocumentTypes"/>
       </Unit13>
       <Unit14>
-        <Filename Value="readers.pas"/>
+        <Filename Value="charornewlinereaders.pas"/>
         <IsPartOfProject Value="True"/>
-        <UnitName Value="Readers"/>
+        <UnitName Value="CharOrNewLineReaders"/>
       </Unit14>
       <Unit15>
         <Filename Value="tokenizers.pas"/>

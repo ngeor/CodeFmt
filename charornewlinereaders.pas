@@ -1,4 +1,4 @@
-unit Readers;
+unit CharOrNewLineReaders;
 
 {$mode Delphi}
 
@@ -8,57 +8,54 @@ uses
   Classes, SysUtils, CharReaders;
 
 type
-  TLineEnding = (leCR, leLF, leCRLF);
+  TNewLineKind = (nlCR, nlLF, nlCRLF);
 
-  TLineRead = record
+  TCharOrNewLine = record
     case HasValue: Boolean of
       False: ();
       True: (
         case IsEol: Boolean of
           False: (Value: Char);
-          True: (Kind: TLineEnding));
+          True: (NewLineKind: TNewLineKind));
   end;
 
-  TLineReads = array of TLineRead;
+  TCharOrNewLineArray = array of TCharOrNewLine;
 
-  TCharPredicate = function(Ch: Char): Boolean;
-
-  TLineReader = class
+  TCharOrNewLineReader = class
   private
-    FPushBackReader: TPushBackReader;
+    FPushBackReader: TPushBackCharReader;
   public
-    constructor Create(PushBackReader: TPushBackReader);
+    constructor Create(PushBackReader: TPushBackCharReader);
     destructor Destroy; override;
-    function Read: TLineRead;
+    function Read: TCharOrNewLine;
   end;
 
   type
-    TPushBackLineReader = class
+    TPushBackCharOrNewLineReader = class
     private
-      FLineReader: TLineReader;
-      FPrevious: TLineRead;
+      FLineReader: TCharOrNewLineReader;
+      FPrevious: TCharOrNewLine;
     public
-      constructor Create(LineReader: TLineReader);
+      constructor Create(LineReader: TCharOrNewLineReader);
       destructor Destroy; override;
-      function Read: TLineRead;
-      procedure UnRead(LineRead: TLineRead);
+      function Read: TCharOrNewLine;
+      procedure UnRead(LineRead: TCharOrNewLine);
     end;
 
 implementation
 
-
-constructor TLineReader.Create(PushBackReader: TPushBackReader);
+constructor TCharOrNewLineReader.Create(PushBackReader: TPushBackCharReader);
 begin
   FPushBackReader := PushBackReader;
 end;
 
-destructor TLineReader.Destroy;
+destructor TCharOrNewLineReader.Destroy;
 begin
   FPushBackReader.Free;
   inherited Destroy;
 end;
 
-function TLineReader.Read: TLineRead;
+function TCharOrNewLineReader.Read: TCharOrNewLine;
 var
   First, Second: TOptChar;
 begin
@@ -74,24 +71,24 @@ begin
       begin
         if Second.Value = '\n' then
         begin
-          Result.Kind := leCRLF;
+          Result.NewLineKind := nlCRLF;
         end
         else
         begin
           FPushBackReader.UnRead(Second.Value);
-          Result.Kind := leCR;
+          Result.NewLineKind := nlCR;
         end
       end
       else
       begin
         Result.IsEol := True;
-        Result.Kind := leCR;
+        Result.NewLineKind := nlCR;
       end
     end
     else if First.Value = '\n' then
     begin
       Result.IsEol := True;
-      Result.Kind := leLF;
+      Result.NewLineKind := nlLF;
     end
     else
     begin
@@ -103,19 +100,19 @@ begin
     Result.HasValue := False
 end;
 
-constructor TPushBackLineReader.Create(LineReader: TLineReader);
+constructor TPushBackCharOrNewLineReader.Create(LineReader: TCharOrNewLineReader);
 begin
   FLineReader := LineReader;
   FPrevious.HasValue := False;
 end;
 
-destructor TPushBackLineReader.Destroy;
+destructor TPushBackCharOrNewLineReader.Destroy;
 begin
   FLineReader.Free;
   inherited Destroy;
 end;
 
-function TPushBackLineReader.Read: TLineRead;
+function TPushBackCharOrNewLineReader.Read: TCharOrNewLine;
 begin
   if FPrevious.HasValue then
   begin
@@ -126,7 +123,7 @@ begin
     Result := FLineReader.Read;
 end;
 
-procedure TPushBackLineReader.UnRead(LineRead: TLineRead);
+procedure TPushBackCharOrNewLineReader.UnRead(LineRead: TCharOrNewLine);
 begin
   if FPrevious.HasValue then
     raise Exception.Create('Buffer overflow')
