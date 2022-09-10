@@ -4,7 +4,7 @@ unit Tokenizers;
 
 interface
 
-uses CharOrNewLineReaders, Recognizers;
+uses CharOrNewLineReaders, Recognizers, SysUtils;
 
 type
   TRowCol = record
@@ -43,10 +43,21 @@ type
     Next: PTokenNode;
   end;
 
+  TTokenLinkedList = class
+  private
+    FHead: PTokenNode;
+  public
+    constructor Create;
+    destructor Destroy; override;
+    function IsEmpty: Boolean;
+    function Pop: TToken;
+    procedure Push(Token: TToken);
+  end;
+
   TUndoTokenizer = class
   private
     FTokenizer: TTokenizer;
-    FBuffer: PTokenNode;
+    FBuffer: TTokenLinkedList;
   public
     constructor Create(Tokenizer: TTokenizer);
     destructor Destroy; override;
@@ -163,46 +174,76 @@ end;
 constructor TUndoTokenizer.Create(Tokenizer: TTokenizer);
 begin
   FTokenizer := Tokenizer;
-  FBuffer := nil;
+  FBuffer := TTokenLinkedList.Create;
 end;
 
 destructor TUndoTokenizer.Destroy;
-var
-  temp: PTokenNode;
 begin
   FTokenizer.Free;
-  while Assigned(FBuffer) do
-  begin
-    temp := FBuffer;
-    FBuffer := FBuffer^.Next;
-    Dispose(temp);
-  end;
+  FBuffer.Free;
   inherited Destroy;
 end;
 
 function TUndoTokenizer.Read: TToken;
-var
-  temp: PTokenNode;
 begin
-  if Assigned(FBuffer) then
-  begin
-    Result := FBuffer^.Data;
-    temp := FBuffer;
-    FBuffer := FBuffer^.Next;
-    Dispose(temp);
-  end
+  if FBuffer.IsEmpty then
+    Result := FTokenizer.Read
   else
-    Result := FTokenizer.Read;
+    Result := FBuffer.Pop
 end;
 
 procedure TUndoTokenizer.Undo(Token: TToken);
+begin
+  FBuffer.Push(Token);
+end;
+
+constructor TTokenLinkedList.Create;
+begin
+  FHead := nil;
+end;
+
+destructor TTokenLinkedList.Destroy;
+var
+  temp: PTokenNode;
+begin
+  while not IsEmpty do
+  begin
+    temp := FHead;
+    FHead := FHead^.Next;
+    Dispose(temp);
+  end;
+
+  inherited Destroy;
+end;
+
+function TTokenLinkedList.IsEmpty: Boolean;
+begin
+  Result := not Assigned(FHead);
+end;
+
+function TTokenLinkedList.Pop: TToken;
+var
+  temp: PTokenNode;
+begin
+  if IsEmpty then
+    raise Exception.Create('Buffer underflow')
+  else
+  begin
+    Result := FHead^.Data;
+    temp := FHead;
+    FHead := FHead^.Next;
+    Dispose(temp);
+  end
+end;
+
+procedure TTokenLinkedList.Push(Token: TToken);
 var
   temp: PTokenNode;
 begin
   New(temp);
   temp^.Data := Token;
-  temp^.Next := FBuffer;
-  FBuffer := temp;
+  temp^.Next := FHead;
+  FHead := temp;
 end;
 
 end.
