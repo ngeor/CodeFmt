@@ -23,6 +23,8 @@ type
     Position: TTokenPosition;
   end;
 
+  TCharOrNewLineArray = array of TCharOrNewLine;
+
   TTokenRecognizer = class
     function Recognize(Buffer: TCharOrNewLineArray): Boolean; virtual; abstract;
   end;

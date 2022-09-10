@@ -19,8 +19,6 @@ type
       ckChar: (Ch: Char);
   end;
 
-  TCharOrNewLineArray = array of TCharOrNewLine;
-
   TCharOrNewLineReader = class
   private
     FPushBackReader: TPushBackCharReader;
