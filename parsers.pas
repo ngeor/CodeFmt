@@ -79,6 +79,18 @@ type
     procedure Undo(Source: TUndoTokenizer; Data: TList); override;
   end;
 
+type
+  TOrParser<T> = class(TParser<T>)
+  private
+    FLeft: TParser<T>;
+    FRight: TParser<T>;
+  public
+    constructor Create(Left: TParser<T>; Right: TParser<T>);
+    destructor Destroy; override;
+    function Parse(Source: TUndoTokenizer): TParseResult<T>; override;
+    procedure Undo(Source: TUndoTokenizer; Data: T); override;
+  end;
+
 implementation
 
 (* TokenKind *)
@@ -262,6 +274,33 @@ begin
     Dec(i);
   end;
   Data.Free;
+end;
+
+(* Or *)
+
+constructor TOrParser<T>.Create(Left: TParser<T>; Right: TParser<T>);
+begin
+  FLeft := Left;
+  FRight := Right;
+end;
+
+destructor TOrParser<T>.Destroy;
+begin
+  FLeft.Free;
+  FRight.Free;
+  inherited Destroy;
+end;
+
+function TOrParser<T>.Parse(Source: TUndoTokenizer): TParseResult<T>;
+begin
+  Result := FLeft.Parse(Source);
+  if not Result.Success then
+    Result := FRight.Parse(Source);
+end;
+
+procedure TOrParser<T>.Undo(Source: TUndoTokenizer; Data: T);
+begin
+  FLeft.Undo(Source, Data); // TODO: remember which parser was actually used?
 end;
 
 end.

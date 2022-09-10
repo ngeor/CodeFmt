@@ -40,6 +40,8 @@ type
       procedure UnRead(LineRead: TCharOrNewLine);
     end;
 
+function CreatePushBackCharOrNewLineReader(Stream: TStream): TPushBackCharOrNewLineReader;
+
 implementation
 
 constructor TCharOrNewLineReader.Create(PushBackReader: TPushBackCharReader);
@@ -127,6 +129,15 @@ begin
     raise Exception.Create('Invalid argument')
   else
     FPrevious := LineRead;
+end;
+
+function CreatePushBackCharOrNewLineReader(Stream: TStream): TPushBackCharOrNewLineReader;
+begin
+  Result := TPushBackCharOrNewLineReader.Create(
+    TCharOrNewLineReader.Create(
+      CreatePushBackCharReader(Stream)
+    )
+  )
 end;
 
 end.

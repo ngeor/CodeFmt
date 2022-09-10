@@ -59,8 +59,6 @@ type
     property Position: Integer read FPosition;
   end;
 
-procedure TestParser;
-
 implementation
 
 uses CharReaders, CharOrNewLineReaders, Tokenizers, Recognizers, Parsers;
@@ -166,111 +164,6 @@ begin
   end;
 
   Result := buffer;
-end;
-
-{ Sample implementation for TTokenizer }
-// parse this text: abc 123 def 456
-
-type
-  TSampleTokenKind = (stkDigits, stkLetters, stkOther);
-
-function CreateSampleTokenizer(LineReader: TPushBackCharOrNewLineReader): TTokenizer;
-begin
-  Result := TTokenizer.Create(
-    LineReader,
-    // order must match TSampleTokenKind enum
-    [
-      TPredicateRecognizer.Create(IsDigit),
-      TPredicateRecognizer.Create(IsLetter),
-      TAnyRecognizer.Create
-    ]
-  );
-end;
-
-type
-  TSimplePair = record
-    Letters: String;
-    Numbers: Integer;
-  end;
-  TSimplePairs = array of TSimplePair;
-
-type
-  TTokenPair = TPair<TToken, TToken>;
-
-function Apply1(Pair: TTokenPair): TSimplePair;
-begin
-  Result.Letters := Pair.Left.Data;
-  Result.Numbers := StrToInt(Pair.Right.Data);
-end;
-
-function CreateSimplePairParser: TParser<TSimplePair>;
-begin
-  Result := Map<TTokenPair, TSimplePair>(
-    Seq<TToken, TToken>(
-      TTokenKindParser.Create(Ord(stkLetters)),
-      TTokenKindParser.Create(Ord(stkDigits))
-    ),
-    Apply1
-  );
-end;
-
-function Apply2(List: TList): TSimplePairs;
-var
-  i : Integer;
-  p: ^TSimplePair;
-begin
-  SetLength(Result, List.Count);
-  for i := 0 to List.Count - 1 do
-  begin
-    p := List[i];
-    Result[i] := p^;
-    Dispose(p);
-  end;
-  List.Free;
-end;
-
-function CreateSimpleParser: TParser<TSimplePairs>;
-var
-  ItemParser: TParser<TSimplePair>;
-  ManyParser: TParser<TList>;
-begin
-  ItemParser := CreateSimplePairParser;
-  ManyParser := TManyParser<TSimplePair>.Create(ItemParser);
-  Result := TMapParser<TList, TSimplePairs>.Create(ManyParser, Apply2);
-end;
-
-procedure TestParser;
-var
-  Parser: TParser<TSimplePairs>;
-  Result: TParseResult<TSimplePairs>;
-  Pairs: TSimplePairs;
-  i: Integer;
-begin
-  Parser := CreateSimpleParser;
-  Result := Parser.Parse(
-    TUndoTokenizer.Create(
-      CreateSampleTokenizer(
-        TPushBackCharOrNewLineReader.Create(
-          TCharOrNewLineReader.Create(
-            TPushBackCharReader.Create(
-              TStreamCharReader.Create(
-                TStringStream.Create('abc123def456')
-              )
-            )
-          )
-        )
-      )
-    )
-  );
-  if Result.Success then
-  begin
-    Pairs := Result.Data;
-    i := 0;
-  end
-  else
-  begin
-    i := 0;
-  end;
 end;
 
 end.

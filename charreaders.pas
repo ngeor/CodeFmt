@@ -38,6 +38,8 @@ type
     procedure UnRead(Ch: Char);
   end;
 
+function CreatePushBackCharReader(Stream: TStream): TPushBackCharReader;
+
 implementation
 
 constructor TStreamCharReader.Create(Stream: TStream);
@@ -99,6 +101,11 @@ begin
     FBuffer.HasValue := True;
     FBuffer.Value := Ch;
   end;
+end;
+
+function CreatePushBackCharReader(Stream: TStream): TPushBackCharReader;
+begin
+  Result := TPushBackCharReader.Create(TStreamCharReader.Create(Stream));
 end;
 
 end.

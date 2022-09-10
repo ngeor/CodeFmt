@@ -48,7 +48,7 @@ begin
     dtPascal:
       Result := TPascalLexer.Create(Formatter.WriteToken);
     dtEditorConfig:
-      Result := TEditorConfigLexer.Create(Formatter.WriteToken);
+      Result := TNewEditorConfigLexer.Create(Formatter.WriteToken);
     else
       raise Exception.Create('Not implemented');
   end;

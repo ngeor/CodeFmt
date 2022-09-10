@@ -4,7 +4,7 @@ unit Tokenizers;
 
 interface
 
-uses CharOrNewLineReaders, Recognizers, SysUtils;
+uses Classes, SysUtils, CharOrNewLineReaders, Recognizers;
 
 type
   TRowCol = record
@@ -18,7 +18,7 @@ type
   end;
 
   TToken = record
-    Data: String;
+    Text: String;
     // if < 0, token is not matched
     // if >= 0, it's the recognizer that found it
     Kind: Integer;
@@ -27,12 +27,12 @@ type
 
   TTokenizer = class
   private
-    FLineReader: TPushBackCharOrNewLineReader;
+    FReader: TPushBackCharOrNewLineReader;
     FRecognizers: TTokenRecognizers;
     FRowCol: TRowCol;
     function Recognize(Buffer: TCharOrNewLineArray): Integer;
   public
-    constructor Create(LineReader: TPushBackCharOrNewLineReader; Recognizers: TTokenRecognizers);
+    constructor Create(Reader: TPushBackCharOrNewLineReader; Recognizers: TTokenRecognizers);
     destructor Destroy; override;
     function Read: TToken;
   end;
@@ -65,11 +65,13 @@ type
     procedure Undo(Token: TToken);
   end;
 
+function CreateUndoTokenizer(Stream: TStream; Recognizers: TTokenRecognizers): TUndoTokenizer;
+
 implementation
 
-constructor TTokenizer.Create(LineReader: TPushBackCharOrNewLineReader; Recognizers: TTokenRecognizers);
+constructor TTokenizer.Create(Reader: TPushBackCharOrNewLineReader; Recognizers: TTokenRecognizers);
 begin
-  FLineReader := LineReader;
+  FReader := Reader;
   FRecognizers := Recognizers;
   with FRowCol do
   begin
@@ -82,7 +84,7 @@ destructor TTokenizer.Destroy;
 var
   i: Integer;
 begin
-  FLineReader.Free;
+  FReader.Free;
   for i := Low(FRecognizers) to High(FRecognizers) do
     FRecognizers[i].Free;
   inherited Destroy;
@@ -102,7 +104,7 @@ begin
   RecognizerIndex := -1;
   NoMatchOrEof := False;
   repeat
-    Next := FLineReader.Read;
+    Next := FReader.Read;
     if Next.Kind <> ckEof then
     begin
       { add read character to buffer}
@@ -115,7 +117,7 @@ begin
       if NextRecognizerIndex = -1 then
       begin
         NoMatchOrEof := True;
-        FLineReader.UnRead(Next);
+        FReader.UnRead(Next);
         Dec(Size);
         SetLength(Buffer, Size);
       end
@@ -134,7 +136,7 @@ begin
   if RecognizerIndex >= 0 then
   begin
     Result.Position.Start := FRowCol;
-    Result.Data := '';
+    Result.Text := '';
     for i := Low(Buffer) To High(Buffer) do
     begin
       Next := Buffer[i];
@@ -143,15 +145,15 @@ begin
         Inc(FRowCol.Row);
         FRowCol.Col := 1;
         case Next.NewLineKind of
-          nlCR: Result.Data := Result.Data + '\r';
-          nlLF: Result.Data := Result.Data + '\n';
-          nlCRLF: Result.Data := Result.Data + '\r\n';
+          nlCR: Result.Text := Result.Text + '\r';
+          nlLF: Result.Text := Result.Text + '\n';
+          nlCRLF: Result.Text := Result.Text + '\r\n';
         end;
       end
       else
       begin
         Inc(FRowCol.Col);
-        Result.Data := Result.Data + Next.Ch;
+        Result.Text := Result.Text + Next.Ch;
       end
     end;
     Result.Position.Finish := FRowCol;
@@ -244,6 +246,13 @@ begin
   temp^.Data := Token;
   temp^.Next := FHead;
   FHead := temp;
+end;
+
+function CreateUndoTokenizer(Stream: TStream; Recognizers: TTokenRecognizers): TUndoTokenizer;
+begin
+  Result := TUndoTokenizer.Create(
+    TTokenizer.Create(CreatePushBackCharOrNewLineReader(Stream), Recognizers)
+  );
 end;
 
 end.

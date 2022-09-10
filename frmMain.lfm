@@ -102,11 +102,6 @@ object MainForm: TMainForm
         Caption = '&Προτιμήσεις...'
         OnClick = ToolsPrefClick
       end
-      object mnuTest: TMenuItem
-        Caption = 'test'
-        ShortCut = 115
-        OnClick = mnuTestClick
-      end
     end
     object HelpMenu: TMenuItem
       Caption = '&Βοήθεια'

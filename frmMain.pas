@@ -15,7 +15,6 @@ type
 
   TMainForm = class(TForm)
     IpHtmlPanel1: TIpHtmlPanel;
-    mnuTest: TMenuItem;
     OpenDialog1: TOpenDialog;
     SaveDialog1: TSaveDialog;
     MainMenu1: TMainMenu;
@@ -34,7 +33,6 @@ type
     StatusBar1: TStatusBar;
     procedure FileOpenClick(Sender: TObject);
     procedure FileExitClick(Sender: TObject);
-    procedure mnuTestClick(Sender: TObject);
     procedure ToolsPrefClick(Sender: TObject);
     procedure HelpAboutClick(Sender: TObject);
     procedure FileSaveAsClick(Sender: TObject);
@@ -105,11 +103,6 @@ end;
 procedure TMainForm.FileExitClick(Sender: TObject);
 begin
   Close;
-end;
-
-procedure TMainForm.mnuTestClick(Sender: TObject);
-begin
-  TestParser;
 end;
 
 {
