@@ -96,7 +96,7 @@ begin
   NoMatchOrEof := False;
   repeat
     Next := FLineReader.Read;
-    if Next.HasValue then
+    if Next.Kind <> ckEof then
     begin
       { add read character to buffer}
       Inc(Size);
@@ -131,7 +131,7 @@ begin
     for i := Low(Buffer) To High(Buffer) do
     begin
       Next := Buffer[i];
-      if Next.IsEol then
+      if Next.Kind = ckEol then
       begin
         Inc(FRowCol.Row);
         FRowCol.Col := 1;
@@ -144,7 +144,7 @@ begin
       else
       begin
         Inc(FRowCol.Col);
-        Result.Data := Result.Data + Next.Value;
+        Result.Data := Result.Data + Next.Ch;
       end
     end;
     Result.Position.Finish := FRowCol;

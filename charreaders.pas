@@ -56,6 +56,7 @@ var
   Buffer: array [0..1] of Char;
   BytesRead: Integer;
 begin
+  // TODO: use buffering instead of reading just one character
   BytesRead := FStream.Read(Buffer, 1);
   if BytesRead = 1 then
   begin

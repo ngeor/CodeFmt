@@ -10,13 +10,13 @@ uses
 type
   TNewLineKind = (nlCR, nlLF, nlCRLF);
 
+  TCharOrNewLineKind = (ckEof, ckEol, ckChar);
+
   TCharOrNewLine = record
-    case HasValue: Boolean of
-      False: ();
-      True: (
-        case IsEol: Boolean of
-          False: (Value: Char);
-          True: (NewLineKind: TNewLineKind));
+    case Kind : TCharOrNewLineKind of
+      ckEof: ();
+      ckEol: (NewLineKind: TNewLineKind);
+      ckChar: (Ch: Char);
   end;
 
   TCharOrNewLineArray = array of TCharOrNewLine;
@@ -62,10 +62,9 @@ begin
   First := FPushBackReader.Read;
   if First.HasValue then
   begin
-    Result.HasValue := true;
     if First.Value = '\r' then
     begin
-      Result.IsEol := True;
+      Result.Kind := ckEol;
       Second := FPushBackReader.Read;
       if Second.HasValue then
       begin
@@ -81,29 +80,28 @@ begin
       end
       else
       begin
-        Result.IsEol := True;
         Result.NewLineKind := nlCR;
       end
     end
     else if First.Value = '\n' then
     begin
-      Result.IsEol := True;
+      Result.Kind := ckEol;
       Result.NewLineKind := nlLF;
     end
     else
     begin
-      Result.IsEol := False;
-      Result.Value := First.Value;
+      Result.Kind := ckChar;
+      Result.Ch := First.Value;
     end
   end
   else
-    Result.HasValue := False
+    Result.Kind := ckEof;
 end;
 
 constructor TPushBackCharOrNewLineReader.Create(LineReader: TCharOrNewLineReader);
 begin
   FLineReader := LineReader;
-  FPrevious.HasValue := False;
+  FPrevious.Kind := ckEof;
 end;
 
 destructor TPushBackCharOrNewLineReader.Destroy;
@@ -114,10 +112,10 @@ end;
 
 function TPushBackCharOrNewLineReader.Read: TCharOrNewLine;
 begin
-  if FPrevious.HasValue then
+  if FPrevious.Kind <> ckEof then
   begin
     Result := FPrevious;
-    FPrevious.HasValue := False;
+    FPrevious.Kind := ckEof;
   end
   else
     Result := FLineReader.Read;
@@ -125,9 +123,9 @@ end;
 
 procedure TPushBackCharOrNewLineReader.UnRead(LineRead: TCharOrNewLine);
 begin
-  if FPrevious.HasValue then
+  if FPrevious.Kind <> ckEof then
     raise Exception.Create('Buffer overflow')
-  else if not LineRead.HasValue then
+  else if LineRead.Kind = ckEof then
     raise Exception.Create('Invalid argument')
   else
     FPrevious := LineRead;

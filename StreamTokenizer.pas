@@ -209,7 +209,7 @@ var
   i: Integer;
 begin
   i := Low(Buffer);
-  while (i <= High(Buffer)) and (Buffer[i].HasValue) and (not Buffer[i].IsEol) and (FPredicate(Buffer[i].Value)) do
+  while (i <= High(Buffer)) and (Buffer[i].Kind = ckChar) and (FPredicate(Buffer[i].Ch)) do
     Inc(i);
   Result := i > High(Buffer);
 end;
