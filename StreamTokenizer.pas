@@ -61,8 +61,6 @@ type
 
 implementation
 
-uses CharReaders, CharOrNewLineReaders, Tokenizers, Recognizers, Parsers;
-
 constructor TStreamTokenizer.Create(InputStream: TStream);
 var
   FReadBuf: PChar;
