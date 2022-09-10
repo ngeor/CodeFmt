@@ -63,7 +63,7 @@ procedure TestParser;
 
 implementation
 
-uses Readers, Tokenizers;
+uses CharReaders, Readers, Tokenizers;
 
 constructor TStreamTokenizer.Create(InputStream: TStream);
 var
