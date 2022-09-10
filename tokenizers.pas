@@ -41,6 +41,23 @@ type
     function Read: TToken;
   end;
 
+  PTokenNode = ^TTokenNode;
+  TTokenNode = record
+    Data: TToken;
+    Next: PTokenNode;
+  end;
+
+  TUndoTokenizer = class
+  private
+    FTokenizer: TTokenizer;
+    FBuffer: PTokenNode;
+  public
+    constructor Create(Tokenizer: TTokenizer);
+    destructor Destroy; override;
+    function Read: TToken;
+    procedure Undo(Token: TToken);
+  end;
+
 implementation
 
 constructor TTokenizer.Create(LineReader: TPushBackLineReader; Recognizers: TTokenRecognizers);
@@ -145,6 +162,51 @@ begin
     Result := i
   else
     Result := -1
+end;
+
+constructor TUndoTokenizer.Create(Tokenizer: TTokenizer);
+begin
+  FTokenizer := Tokenizer;
+  FBuffer := nil;
+end;
+
+destructor TUndoTokenizer.Destroy;
+var
+  temp: PTokenNode;
+begin
+  FTokenizer.Free;
+  while Assigned(FBuffer) do
+  begin
+    temp := FBuffer;
+    FBuffer := FBuffer^.Next;
+    Dispose(temp);
+  end;
+  inherited Destroy;
+end;
+
+function TUndoTokenizer.Read: TToken;
+var
+  temp: PTokenNode;
+begin
+  if Assigned(FBuffer) then
+  begin
+    Result := FBuffer^.Data;
+    temp := FBuffer;
+    FBuffer := FBuffer^.Next;
+    Dispose(temp);
+  end
+  else
+    Result := FTokenizer.Read;
+end;
+
+procedure TUndoTokenizer.Undo(Token: TToken);
+var
+  temp: PTokenNode;
+begin
+  New(temp);
+  temp^.Data := Token;
+  temp^.Next := FBuffer;
+  FBuffer := temp;
 end;
 
 end.
