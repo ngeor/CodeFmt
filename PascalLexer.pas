@@ -7,7 +7,7 @@ interface
 uses SysUtils, Classes, LexerBase;
 
 type
-  TPascalLexer = class(TLexerBase)
+  TPascalLexer = class(TOldLexerBase)
   private
     procedure HandleAnsiComments;
     procedure HandleBorC;

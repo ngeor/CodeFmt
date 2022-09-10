@@ -17,21 +17,26 @@ type
   private
     { Holds the callback method to call when a token is found }
     FTokenFound: TLexerTokenFound;
+  protected
+    { Gets the callback method that is called when a token is found }
+    property TokenFound: TLexerTokenFound read FTokenFound;
+  public
+    constructor Create(TokenFound: TLexerTokenFound);
+    procedure FormatStream(InputStream: TStream); virtual; abstract;
+  end;
 
+  TOldLexerBase = class(TLexerBase)
+  private
     { Holds the stream tokenizer }
     FStreamTokenizer: TStreamTokenizer;
   protected
     procedure CurrentTokenFound(const TokenType: TTokenType);
     procedure Scan; virtual;
 
-    { Gets the callback method that is called when a token is found }
-    property TokenFound: TLexerTokenFound read FTokenFound;
-
     { Gets the stream tokenizer }
     property StreamTokenizer: TStreamTokenizer read FStreamTokenizer;
   public
-    constructor Create(TokenFound: TLexerTokenFound);
-    procedure FormatStream(InputStream: TStream);
+    procedure FormatStream(InputStream: TStream); override;
   end;
 
 { Handles CRLF tokens. A CRLF sequence is recognized as a single token. Single
@@ -57,7 +62,7 @@ begin
   FTokenFound := TokenFound;
 end;
 
-procedure TLexerBase.FormatStream(InputStream: TStream);
+procedure TOldLexerBase.FormatStream(InputStream: TStream);
 var
   oldPosition: Integer;
 begin
@@ -84,12 +89,12 @@ begin
   end;
 end;
 
-procedure TLexerBase.CurrentTokenFound(const TokenType: TTokenType);
+procedure TOldLexerBase.CurrentTokenFound(const TokenType: TTokenType);
 begin
   TokenFound(FStreamTokenizer.TokenAndMark, TokenType);
 end;
 
-procedure TLexerBase.Scan;
+procedure TOldLexerBase.Scan;
 begin
 
 end;

@@ -7,7 +7,7 @@ interface
 uses SysUtils, Classes, LexerBase;
 
 type
-  TCppLexer = class(TLexerBase)
+  TCppLexer = class(TOldLexerBase)
   private
     procedure HandleString;
     procedure HandleIdentifier;

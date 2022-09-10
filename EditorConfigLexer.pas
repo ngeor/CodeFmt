@@ -8,7 +8,7 @@ uses
   Classes, SysUtils, LexerBase;
 
 type
-  TEditorConfigLexer = class(TLexerBase)
+  TEditorConfigLexer = class(TOldLexerBase)
   protected
     procedure Scan; override;
   private
