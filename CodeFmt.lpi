@@ -41,7 +41,7 @@
         <PackageName Value="LCL"/>
       </Item2>
     </RequiredPackages>
-    <Units Count="14">
+    <Units Count="15">
       <Unit0>
         <Filename Value="CodeFmt.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -105,6 +105,11 @@
         <IsPartOfProject Value="True"/>
         <UnitName Value="DocumentTypes"/>
       </Unit13>
+      <Unit14>
+        <Filename Value="readers.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="Readers"/>
+      </Unit14>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
