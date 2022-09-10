@@ -52,6 +52,7 @@ type
     function IsEmpty: Boolean;
     function Pop: TToken;
     procedure Push(Token: TToken);
+    procedure Append(List: TTokenLinkedList);
   end;
 
   TUndoTokenizer = class
@@ -246,6 +247,22 @@ begin
   temp^.Data := Token;
   temp^.Next := FHead;
   FHead := temp;
+end;
+
+procedure TTokenLinkedList.Append(List: TTokenLinkedList);
+var
+  temp: PTokenNode;
+begin
+  temp := FHead;
+  while (temp <> nil) and (temp^.Next <> nil) do
+    temp := temp^.Next;
+  if temp <> nil then
+  begin
+    temp^.Next := List.FHead;
+    List.FHead := nil;
+  end
+  else
+    raise Exception.Create('Cannot append to empty list')
 end;
 
 function CreateUndoTokenizer(Stream: TStream; Recognizers: TTokenRecognizers): TUndoTokenizer;

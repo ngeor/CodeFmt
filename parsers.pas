@@ -221,12 +221,20 @@ end;
 
 type
   TListPair = TPair<TTokenLinkedList, TTokenLinkedList>;
+
 function MergeLists(Pair: TListPair): TTokenLinkedList;
 begin
-  Result := Pair.Left;
-  while not Pair.Right.IsEmpty do
-    Result.Push(Pair.Right.Pop);
-  Pair.Right.Free;
+  if Pair.Right.IsEmpty then
+  begin
+    Pair.Right.Free;
+    Result := Pair.Left;
+  end
+  else
+  begin
+    Pair.Right.Append(Pair.Left);
+    Pair.Left.Free;
+    Result := Pair.Right;
+  end
 end;
 
 function Seq(Left: TParser<TTokenLinkedList>; Right: TParser<TTokenLinkedList>): TParser<TTokenLinkedList>; overload;

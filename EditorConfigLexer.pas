@@ -8,16 +8,6 @@ uses
   Classes, SysUtils, LexerBase;
 
 type
-  TOldEditorConfigLexer = class(TOldLexerBase)
-  protected
-    procedure Scan; override;
-  private
-    procedure HandleIdentifier;
-    procedure HandleNumber;
-    procedure HandleSymbol;
-  end;
-
-type
   TNewEditorConfigLexer = class(TLexerBase)
   public
     procedure FormatStream(InputStream: TStream); override;
@@ -27,39 +17,6 @@ type
 implementation
 
 uses TokenTypes, Tokenizers, Recognizers, Parsers;
-
-procedure TOldEditorConfigLexer.Scan;
-begin
-  HandleCRLF(StreamTokenizer, TokenFound);
-  HandleSpace(StreamTokenizer, TokenFound);
-  HandleLineComment(StreamTokenizer, TokenFound, '#');
-  HandleIdentifier;
-  HandleNumber;
-  HandleSymbol;
-end;
-
-procedure TOldEditorConfigLexer.HandleIdentifier;
-begin
-  if StreamTokenizer.Scan(['a'..'z'], ['a'..'z', '0'..'9', '-', '_']) then
-    CurrentTokenFound(ttIdentifier);
-end;
-
-procedure TOldEditorConfigLexer.HandleNumber;
-begin
-  if StreamTokenizer.Scan(['0'..'9'], ['0'..'9']) then
-    CurrentTokenFound(ttNumber);
-end;
-
-procedure TOldEditorConfigLexer.HandleSymbol;
-begin
-  if StreamTokenizer.Current in ['[', ']', '=', '*'] then
-  begin
-    StreamTokenizer.Next;
-    CurrentTokenFound(ttSymbol);
-  end;
-end;
-
-(* NewEditorConfigLexer *)
 
 function IsIdentifierRemaining(Ch: Char): Boolean;
 begin
@@ -194,7 +151,8 @@ var
 begin
   Buffer := '';
   while not List.IsEmpty do
-    Buffer := Buffer + List.Pop.Text;
+    { list is LIFO }
+    Buffer := List.Pop.Text + Buffer;
   List.Free;
   Result.Kind := ttDirective; // just to see it bold
   Result.Text := Buffer;
