@@ -18,10 +18,43 @@ implementation
 
 uses TokenTypes, Tokenizers, Recognizers, Parsers;
 
+(* Recognizers *)
+
 function IsIdentifierRemaining(Ch: Char): Boolean;
 begin
   Result := IsLetter(Ch) or IsDigit(Ch) or (Ch = '_') or (Ch = '_');
 end;
+
+type
+  TTokenType = (ttEol, ttWhiteSpace, ttDigits, ttPound, ttLeftBracket, ttRightBracket, ttIdentifier, ttUnknown);
+  TTokenTypeSet = set of TTokenType;
+
+function CreateRecognizer(TokenType: TTokenType): TTokenRecognizer;
+begin
+  case TokenType of
+    ttEol: Result := TNewLineRecognizer.Create;
+    ttWhiteSpace: Result := TPredicateRecognizer.Create(IsWhiteSpace);
+    ttDigits: Result := TPredicateRecognizer.Create(IsDigit);
+    ttPound: Result := TNeedleRecognizer.Create('#');
+    ttLeftBracket: Result := TNeedleRecognizer.Create('[');
+    ttRightBracket: Result := TNeedleRecognizer.Create(']');
+    ttIdentifier: Result := TLeadingPredicateRecognizer.Create(IsLetter, IsIdentifierRemaining);
+    ttUnknown: Result := TAnyRecognizer.Create;
+    else raise Exception.Create('Unknown token type')
+  end;
+end;
+
+function CreateRecognizers: TTokenRecognizers;
+var
+  TokenType: TTokenType;
+  TokenTypes: TTokenTypeSet;
+begin
+  SetLength(Result, Ord(High(TokenTypes)) - Ord(Low(TokenTypes)) + 1);
+  for TokenType := Low(TokenTypes) to High(TokenTypes) do
+    Result[Ord(TokenType)] := CreateRecognizer(TokenType);
+end;
+
+(* Parsers *)
 
 type
   TFmt = record
@@ -29,29 +62,8 @@ type
     Kind: THigherTokenType;
   end;
 
-function CreateRecognizers: TTokenRecognizers;
-begin
-  Result := [
-    // 0: T_NEW_LINE
-    TNewLineRecognizer.Create,
-    // 1: T_WS
-    TPredicateRecognizer.Create(IsWhiteSpace),
-    // 2: T_DIGITS
-    TPredicateRecognizer.Create(IsDigit),
-    // 3: T_POUND
-    TNeedleRecognizer.Create('#'),
-    // 4: T_LEFT_BRACKET
-    TNeedleRecognizer.Create('['),
-    // 5: T_RIGHT_BRACKET
-    TNeedleRecognizer.Create(']'),
-    // 6: T_IDENTIFIER
-    TLeadingPredicateRecognizer.Create(IsLetter, IsIdentifierRemaining),
-    // 7: T_UNKNOWN
-    TAnyRecognizer.Create];
-end;
-
 type
-  (* For editor config, covers everything except for the line comment *)
+  (* For editor config, covers most simple cases *)
   TSimpleParser = class(TParser<TFmt>)
   public
     function Parse(Source: TUndoTokenizer): TParseResult<TFmt>; override;
@@ -61,46 +73,73 @@ type
 function TSimpleParser.Parse(Source: TUndoTokenizer): TParseResult<TFmt>;
 var
   Next: TToken;
+  SourceTokens: array of TTokenType = [ttEol, ttWhiteSpace, ttDigits, ttIdentifier, ttUnknown];
+  DestTokens: array of THigherTokenType = [htCRLF, htSpace, htNumber, htIdentifier, htUnknown];
+  i: Integer;
 begin
   Next := Source.Read;
-  case Next.Kind of
-    -1: Result.Success := False;
-    0: begin
-      Result.Success := True;
-      Result.Data.Text := Next.Text;
-      Result.Data.Kind := htCRLF;
-    end;
-    1: begin
-      Result.Success := True;
-      Result.Data.Text := Next.Text;
-      Result.Data.Kind := htSpace;
-    end;
-    2: begin
-      Result.Success := True;
-      Result.Data.Text := Next.Text;
-      Result.Data.Kind := htNumber;
-    end;
-    6: begin
-      Result.Success := True;
-      Result.Data.Text := Next.Text;
-      Result.Data.Kind := htIdentifier;
-    end;
-    7: begin
-      Result.Success := True;
-      Result.Data.Text := Next.Text;
-      Result.Data.Kind := htUnknown;
-    end;
-    else
+  If Next.Kind < 0 Then
+    Result.Success := False
+  else
+  begin
+    i := Low(SourceTokens);
+    while (i <= High(SourceTokens)) and not Result.Success do
     begin
-      Result.Success := False;
-      Source.Undo(Next);
+      if Ord(SourceTokens[i]) = Next.Kind then
+      begin
+        Result.Success := True;
+        Result.Data.Text := Next.Text;
+        Result.Data.Kind := DestTokens[i];
+      end
+      else
+        Inc(i);
     end;
-  end;
+    if not Result.Success then Source.Undo(Next);
+  end
 end;
 
 procedure TSimpleParser.Undo(Source: TUndoTokenizer; Data: TFmt);
 begin
   raise Exception.Create('oops');
+end;
+
+
+type
+  TTokenTypeFilterParser = class(TFilterParser<TToken>)
+  private
+    FTokenTypes: TTokenTypeSet;
+  protected
+    function Filter(Data: TToken): Boolean; override;
+  public
+    constructor Create(Parser: TParser<TToken>; TokenType: TTokenType); overload;
+    constructor Create(Parser: TParser<TToken>; TokenTypes: TTokenTypeSet); overload;
+  end;
+
+constructor TTokenTypeFilterParser.Create(Parser: TParser<TToken>; TokenType: TTokenType);
+begin
+  inherited Create(Parser);
+  FTokenTypes := [TokenType];
+end;
+
+constructor TTokenTypeFilterParser.Create(Parser: TParser<TToken>; TokenTypes: TTokenTypeSet);
+begin
+  inherited Create(Parser);
+  FTokenTypes := TokenTypes;
+end;
+
+function TTokenTypeFilterParser.Filter(Data: TToken): Boolean;
+begin
+  Result := (Data.Kind >= 0) and ( TTokenType(Data.Kind) in FTokenTypes );
+end;
+
+function FilterToken(TokenType: TTokenType): TParser<TToken>;
+begin
+  Result := TTokenTypeFilterParser.Create(TAnyTokenParser.Create, TokenType);
+end;
+
+function FilterTokens(TokenTypes: TTokenTypeSet): TParser<TToken>;
+begin
+  Result := TTokenTypeFilterParser.Create(TAnyTokenParser.Create, TokenTypes);
 end;
 
 type
@@ -162,10 +201,10 @@ begin
   Result := Map<TTokenLinkedList, TFmt>(
     Seq(
       Seq(
-        TMapTokenToTokenListParser.Create(TTokenKindParser.Create(4)),
-        TManyTokensParser.Create(TTokenKindParser.Create([1, 2, 6, 7]))
+        FilterToken(ttLeftBracket),
+        TManyTokensParser.Create(FilterTokens([ttWhiteSpace, ttDigits, ttIdentifier, ttUnknown]))
       ),
-      TMapTokenToTokenListParser.Create(TTokenKindParser.Create(5))
+      FilterToken(ttRightBracket)
     ),
     SectionMapper
   );
@@ -175,7 +214,7 @@ function CommentParser: TParser<TFmt>;
 begin
   Result := Map<TTokenAndString, TFmt>(
     Seq<TToken, String>(
-      TTokenKindParser.Create(3),
+      FilterToken(ttPound),
       TUntilEolParser.Create
     ),
     MapComment

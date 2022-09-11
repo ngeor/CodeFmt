@@ -55,7 +55,7 @@ var
 
 implementation
 
-uses frmAbout, StreamTokenizer { adding StreamTokenizer for test only };
+uses frmAbout;
 
 {$R *.lfm}
 

@@ -63,7 +63,8 @@ type
     constructor Create(Tokenizer: TTokenizer);
     destructor Destroy; override;
     function Read: TToken;
-    procedure Undo(Token: TToken);
+    procedure Undo(Token: TToken); overload;
+    procedure Undo(var TokenList: TTokenLinkedList); overload;
   end;
 
 function CreateUndoTokenizer(Stream: TStream; Recognizers: TTokenRecognizers): TUndoTokenizer;
@@ -198,6 +199,13 @@ end;
 procedure TUndoTokenizer.Undo(Token: TToken);
 begin
   FBuffer.Push(Token);
+end;
+
+procedure TUndoTokenizer.Undo(var TokenList: TTokenLinkedList);
+begin
+  while not TokenList.IsEmpty do
+    Undo(TokenList.Pop);
+  FreeAndNil(TokenList);
 end;
 
 constructor TTokenLinkedList.Create;
