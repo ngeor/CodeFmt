@@ -37,9 +37,9 @@ begin
     ttEol: Result := TNewLineRecognizer.Create;
     ttWhiteSpace: Result := TPredicateRecognizer.Create(IsWhiteSpace);
     ttDigits: Result := TPredicateRecognizer.Create(IsDigit);
-    ttPound: Result := TNeedleRecognizer.Create('#');
-    ttLeftBracket: Result := TNeedleRecognizer.Create('[');
-    ttRightBracket: Result := TNeedleRecognizer.Create(']');
+    ttPound: Result := TSingleCharRecognizer.Create('#');
+    ttLeftBracket: Result := TSingleCharRecognizer.Create('[');
+    ttRightBracket: Result := TSingleCharRecognizer.Create(']');
     ttIdentifier: Result := TLeadingPredicateRecognizer.Create(IsLetter, IsIdentifierRemaining);
     ttUnknown: Result := TAnyRecognizer.Create;
     else raise Exception.Create('Unknown token type')

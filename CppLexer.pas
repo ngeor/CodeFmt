@@ -7,19 +7,18 @@ interface
 uses SysUtils, Classes, LexerBase;
 
 type
-  TCppLexer = class(TOldLexerBase)
-  private
-    procedure HandleString;
-    procedure HandleIdentifier;
-    procedure HandlePreProcessorDirective;
-    procedure HandleSymbol;
-  protected
-    procedure Scan; override;
+  TCppLexer = class(TLexerBase)
+  public
+    procedure FormatStream(InputStream: TStream); override;
   end;
 
 implementation
 
-uses TokenTypes;
+uses TokenTypes, Tokenizers, Recognizers, Parsers, ParseResult, TokenParsers;
+
+// TODO reduce duplication between CppLexer and EditorConfigLexer
+
+(* Recognizers *)
 
 const
   CppKeyWords: array [0..59] of String =
@@ -36,28 +35,187 @@ const
     'switch', 'template', 'this', 'typedef', 'union',
     'unsigned', 'virtual', 'void', 'volatile', 'while');
 
-procedure TCppLexer.Scan;
+function IsIdentifierRemaining(Ch: Char): Boolean;
 begin
-  HandleCRLF(StreamTokenizer, TokenFound);
-  HandleSpace(StreamTokenizer, TokenFound);
-  HandleSlashesComment(StreamTokenizer, TokenFound);
-  HandleString;
-  HandleIdentifier;
-  HandlePreProcessorDirective;
-  HandleSymbol;
+  Result := IsLetter(Ch) or IsDigit(Ch) or (Ch = '_') or (Ch = '_');
 end;
 
-procedure TCppLexer.HandleString;
-begin
-  if StreamTokenizer.Current = '"' then
-  begin
-    StreamTokenizer.Next;
-    while (not StreamTokenizer.IsEof) and (StreamTokenizer.Current <> '"') do
-      StreamTokenizer.Next;
+type
+  TTokenType = (ttEol, ttWhiteSpace, ttDigits, ttPound, ttQuote, ttDoubleSlash, ttKeyword, ttIdentifier, ttUnknown);
+  TTokenTypeSet = set of TTokenType;
+const
+  AllTokenTypes: TTokenTypeSet = [ttEol..ttUnknown];
 
-    StreamTokenizer.Next;
-    CurrentTokenFound(htString);
+function CreateRecognizer(TokenType: TTokenType): TTokenRecognizer;
+begin
+  case TokenType of
+    ttEol: Result := TNewLineRecognizer.Create;
+    ttWhiteSpace: Result := TPredicateRecognizer.Create(IsWhiteSpace);
+    ttDigits: Result := TPredicateRecognizer.Create(IsDigit);
+    ttPound: Result := TSingleCharRecognizer.Create('#');
+    ttQuote: Result := TSingleCharRecognizer.Create('"');
+    ttDoubleSlash: Result := TStringRecognizer.Create('//'); // TODO does not work because recognizer "unknown" picks up the single slash
+    ttKeyword: Result := TKeywordRecognizer.Create(CppKeyWords);
+    ttIdentifier: Result := TLeadingPredicateRecognizer.Create(IsLetter, IsIdentifierRemaining);
+    ttUnknown: Result := TAnyRecognizer.Create;
+    else raise Exception.Create('Unknown token type')
   end;
+end;
+
+function CreateRecognizers: TTokenRecognizers;
+var
+  TokenType: TTokenType;
+begin
+  SetLength(Result, Ord(High(AllTokenTypes)) - Ord(Low(AllTokenTypes)) + 1);
+  for TokenType := Low(AllTokenTypes) to High(AllTokenTypes) do
+    Result[Ord(TokenType)] := CreateRecognizer(TokenType);
+end;
+
+(* Parsers *)
+
+type
+  (* For editor config, covers most simple cases *)
+  TSimpleParser = class(TParser<TFmt>)
+  public
+    function Parse(Source: TUndoTokenizer): TParseResult<TFmt>; override;
+    procedure Undo(Source: TUndoTokenizer; Data: TFmt); override;
+  end;
+
+function TSimpleParser.Parse(Source: TUndoTokenizer): TParseResult<TFmt>;
+var
+  Next: TToken;
+  SourceTokens: array of TTokenType = [ttEol, ttWhiteSpace, ttDigits, ttIdentifier, ttKeyword, ttUnknown];
+  DestTokens: array of THigherTokenType = [htCRLF, htSpace, htNumber, htIdentifier, htKeyword, htUnknown];
+  i: Integer;
+begin
+  Next := Source.Read;
+  If Next.Kind < 0 Then
+    Result := FailedParseResult<TFmt>()
+  else
+  begin
+    i := Low(SourceTokens);
+    while (i <= High(SourceTokens)) and not Result.Success do
+    begin
+      if Ord(SourceTokens[i]) = Next.Kind then
+        Result := SuccessParseResult<TFmt>(CreateFmt(Next.Text, DestTokens[i]))
+      else
+        Inc(i);
+    end;
+    if not Result.Success then Source.Undo(Next);
+  end
+end;
+
+procedure TSimpleParser.Undo(Source: TUndoTokenizer; Data: TFmt);
+begin
+  raise Exception.Create('oops');
+end;
+
+(* TokenTypeFilterParser *)
+
+type
+  TTokenTypeFilterParser = class(TFilterParser<TToken>)
+  private
+    FTokenTypes: TTokenTypeSet;
+  protected
+    function Filter(Data: TToken): Boolean; override;
+  public
+    constructor Create(Parser: TParser<TToken>; TokenType: TTokenType); overload;
+    constructor Create(Parser: TParser<TToken>; TokenTypes: TTokenTypeSet); overload;
+  end;
+
+constructor TTokenTypeFilterParser.Create(Parser: TParser<TToken>; TokenType: TTokenType);
+begin
+  inherited Create(Parser);
+  FTokenTypes := [TokenType];
+end;
+
+constructor TTokenTypeFilterParser.Create(Parser: TParser<TToken>; TokenTypes: TTokenTypeSet);
+begin
+  inherited Create(Parser);
+  FTokenTypes := TokenTypes;
+end;
+
+function TTokenTypeFilterParser.Filter(Data: TToken): Boolean;
+begin
+  Result := (Data.Kind >= 0) and ( TTokenType(Data.Kind) in FTokenTypes );
+end;
+
+function FilterToken(TokenType: TTokenType): TParser<TToken>;
+begin
+  Result := TTokenTypeFilterParser.Create(TAnyTokenParser.Create, TokenType);
+end;
+
+function FilterTokens(TokenTypes: TTokenTypeSet): TParser<TToken>;
+begin
+  Result := TTokenTypeFilterParser.Create(TAnyTokenParser.Create, TokenTypes);
+end;
+
+(* TokenListToFmtMapper *)
+
+type
+  TListToFmtMapper = class(TMapParser<TTokenLinkedList, TFmt>)
+  private
+    FKind: THigherTokenType;
+  protected
+    function Map(List: TTokenLinkedList): TFmt; override;
+  public
+    constructor Create(Parser: TParser<TTokenLinkedList>; Kind: THigherTokenType);
+    procedure Undo(Source: TUndoTokenizer; Data: TFmt); override;
+  end;
+
+constructor TListToFmtMapper.Create(Parser: TParser<TTokenLinkedList>; Kind: THigherTokenType);
+begin
+  inherited Create(Parser);
+  FKind := Kind;
+end;
+
+function TListToFmtMapper.Map(List: TTokenLinkedList): TFmt;
+var
+  Buffer: String;
+begin
+  Buffer := '';
+  while not List.IsEmpty do
+    { list is LIFO }
+    Buffer := List.Pop.Text + Buffer;
+  List.Free;
+  Result.Kind := FKind;
+  Result.Text := Buffer;
+end;
+
+procedure TListToFmtMapper.Undo(Source: TUndoTokenizer; Data: TFmt);
+begin
+  raise Exception.Create('TListToFmtMapper.Undo is not possible');
+end;
+
+(* NoEol *)
+
+function NoEol: TParser<TToken>;
+begin
+  Result := FilterTokens(AllTokenTypes - [ttEol]);
+end;
+
+// Slash comments
+
+function SlashComments: TParser<TTokenLinkedList>;
+begin
+  Result := Seq(FilterToken(ttDoubleSlash), TManyTokensParser.Create(NoEol));
+end;
+
+// String
+
+function StringParser: TParser<TTokenLinkedList>;
+begin
+  Result := Seq(
+    Seq(FilterToken(ttQuote), TManyTokensParser.Create(FilterTokens(AllTokenTypes - [ttEol, ttQuote]))),
+    FilterToken(ttQuote)
+  );
+end;
+
+// Pre-processor directive
+
+function PreProcessorDirective: TParser<TTokenLinkedList>;
+begin
+  Result := Seq(FilterToken(ttPound), TManyTokensParser.Create(NoEol));
 end;
 
 function ArrayContains(hay: array of String; needle: String): Boolean;
@@ -74,42 +232,33 @@ begin
     end;
 end;
 
-procedure TCppLexer.HandleIdentifier;
+function CreateParser: TParser<TFmt>;
+begin
+  Result := TListToFmtMapper.Create(SlashComments, htComment)
+    .OrElse(TListToFmtMapper.Create(StringParser, htString))
+    .OrElse(TListToFmtMapper.Create(PreProcessorDirective, htDirective))
+    .OrElse(TSimpleParser.Create);
+end;
+
+procedure TCppLexer.FormatStream(InputStream: TStream);
 var
-  token: String;
-  tokenType: THigherTokenType;
+  Tokenizer: TUndoTokenizer;
+  Parser: TParser<TFmt>;
+  Next: TParseResult<TFmt>;
+  Fmt: TFmt;
 begin
-  if StreamTokenizer.Scan(['a'..'z', 'A'..'Z'], ['a'..'z', 'A'..'Z', '_']) then
-  begin
-    token := StreamTokenizer.TokenAndMark;
-
-    if ArrayContains(CppKeyWords, token) then
-      tokenType := htKeyWord
-    else
-      tokenType := htIdentifier;
-
-    TokenFound(token, tokenType);
-  end;
-end;
-
-procedure TCppLexer.HandlePreProcessorDirective;
-begin
-  if StreamTokenizer.Current = '#' then
-  begin
-    while (not StreamTokenizer.IsEof) and (not StreamTokenizer.IsEoln) do
-      StreamTokenizer.Next;
-
-    CurrentTokenFound(htPreProcessor);
-  end;
-end;
-
-procedure TCppLexer.HandleSymbol;
-begin
-  if StreamTokenizer.Current in ['(', ')', ';', '{', '}', '[', ']'] then
-  begin
-    StreamTokenizer.Next;
-    CurrentTokenFound(htSymbol);
-  end;
+  Tokenizer := CreateUndoTokenizer(InputStream, CreateRecognizers);
+  Parser := CreateParser;
+  repeat
+    Next := Parser.Parse(Tokenizer);
+    if Next.Success then
+    begin
+      Fmt := Next.Data;
+      TokenFound(Fmt.Text, Fmt.Kind);
+    end;
+  until not Next.Success;
+  Tokenizer.Free;
+  Parser.Free;
 end;
 
 end.

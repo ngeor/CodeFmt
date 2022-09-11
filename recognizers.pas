@@ -46,11 +46,28 @@ type
     function Recognize(Buffer: TCharOrNewLineArray): Boolean; override;
   end;
 
-  TNeedleRecognizer = class(TTokenRecognizer)
+  TSingleCharRecognizer = class(TTokenRecognizer)
   private
-    FHay: String;
+    FAllowedChars: String;
   public
-    constructor Create(Hay: String);
+    constructor Create(AllowedChars: String);
+    function Recognize(Buffer: TCharOrNewLineArray): Boolean; override;
+  end;
+
+  TStringRecognizer = class(TTokenRecognizer)
+  private
+    FValue: String;
+  public
+    constructor Create(Value: String);
+    function Recognize(Buffer: TCharOrNewLineArray): Boolean; override;
+  end;
+
+  TKeywordRecognizer = class(TTokenRecognizer)
+  private
+    FKeywords: TStringList;
+  public
+    constructor Create(Keywords: array of String);
+    destructor Destroy; override;
     function Recognize(Buffer: TCharOrNewLineArray): Boolean; override;
   end;
 
@@ -128,19 +145,77 @@ begin
   Result := (Length(Buffer) = 1) and (Buffer[0].Kind = ckEol);
 end;
 
-(* Hay *)
+(* Single Char *)
 
-constructor TNeedleRecognizer.Create(Hay: String);
+constructor TSingleCharRecognizer.Create(AllowedChars: String);
 begin
-  FHay := Hay;
+  FAllowedChars := AllowedChars;
 end;
 
-function TNeedleRecognizer.Recognize(Buffer: TCharOrNewLineArray): Boolean;
+function TSingleCharRecognizer.Recognize(Buffer: TCharOrNewLineArray): Boolean;
 begin
   if (Length(Buffer) = 1) and (Buffer[0].Kind = ckChar) then
-    Result := Pos(Buffer[0].Ch, FHay) > 0
+    Result := Pos(Buffer[0].Ch, FAllowedChars) > 0
   else
     Result := False;
+end;
+
+(* Specific String *)
+
+constructor TStringRecognizer.Create(Value: String);
+begin
+  FValue := Value;
+end;
+
+function TStringRecognizer.Recognize(Buffer: TCharOrNewLineArray): Boolean;
+var
+  i: Integer;
+begin
+  if (Length(Buffer) = Length(FValue)) and (Length(Buffer) > 0) then
+  begin
+    i := Low(Buffer);
+    while (i <= High(Buffer)) and (Buffer[i].Kind = ckChar) and (Buffer[i].Ch = FValue[i]) do
+      Inc(i);
+    Result := i > High(Buffer);
+  end
+  else
+    Result := False;
+end;
+
+(* Keywords *)
+
+constructor TKeywordRecognizer.Create(Keywords: array of String);
+var
+  Keyword: String;
+begin
+  FKeywords := TStringList.Create;
+  FKeywords.Sorted := True;
+  for Keyword in Keywords do
+    FKeywords.Add(Keyword);
+end;
+
+destructor TKeywordRecognizer.Destroy;
+begin
+  FKeywords.Free;
+  inherited Destroy;
+end;
+
+function TKeywordRecognizer.Recognize(Buffer: TCharOrNewLineArray): Boolean;
+var
+  Keyword: String;
+  Index: Integer;
+begin
+  Index := Low(Buffer);
+  Keyword := '';
+  while (Index <= High(Buffer)) and (Buffer[Index].Kind = ckChar) do
+  begin
+    Keyword := Keyword + Buffer[Index].Ch;
+    Inc(Index);
+  end;
+  if (Index > High(Buffer)) and (Keyword <> '') then
+    Result := FKeywords.Find(Keyword, Index)
+  else
+    Result := False
 end;
 
 end.
