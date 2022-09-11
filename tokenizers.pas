@@ -30,7 +30,6 @@ type
     FReader: TPushBackCharOrNewLineReader;
     FRecognizers: TTokenRecognizers;
     FRowCol: TRowCol;
-    function Recognize(Buffer: TCharOrNewLineArray): Integer;
   public
     constructor Create(Reader: TPushBackCharOrNewLineReader; Recognizers: TTokenRecognizers);
     destructor Destroy; override;
@@ -71,6 +70,50 @@ function CreateUndoTokenizer(Stream: TStream; Recognizers: TTokenRecognizers): T
 
 implementation
 
+type
+  TRecognizerResponses = class
+  private
+    FResponses: array of TRecognition;
+  public
+    constructor Create(Length: Integer);
+    function GetLastResponse(Index: Integer): TRecognition;
+    procedure SetLastResponse(Index: Integer; Recognition: TRecognition);
+    { How many responses exist of the given recognition value }
+    function CountByRecognition(Recognition: TRecognition): Integer;
+  end;
+
+constructor TRecognizerResponses.Create(Length: Integer);
+var
+  i: Integer;
+begin
+  SetLength(FResponses, Length);
+  for i := 0 to Length - 1 do
+    FResponses[i] := rPartial;
+end;
+
+function TRecognizerResponses.GetLastResponse(Index: Integer): TRecognition;
+begin
+  Result := FResponses[Index];
+end;
+
+procedure TRecognizerResponses.SetLastResponse(Index: Integer; Recognition: TRecognition);
+begin
+  FResponses[Index] := Recognition;
+end;
+
+function TRecognizerResponses.CountByRecognition(Recognition: TRecognition): Integer;
+var
+  i: Integer;
+  sum: Integer;
+begin
+  sum := 0;
+  for i := 0 to Length(FResponses) - 1 do
+    if FResponses[i] = Recognition then Inc(sum);
+  Result := sum;
+end;
+
+(* Tokenizer *)
+
 constructor TTokenizer.Create(Reader: TPushBackCharOrNewLineReader; Recognizers: TTokenRecognizers);
 begin
   FReader := Reader;
@@ -97,14 +140,22 @@ var
   Buffer: TCharOrNewLineArray;
   Next: TCharOrNewLine;
   Size: Integer;
-  RecognizerIndex: Integer;
-  NextRecognizerIndex: Integer;
   NoMatchOrEof: Boolean;
   i: Integer;
+  RecognizerResponses: TRecognizerResponses;
+  LastResponse, Recognition: TRecognition;
+  Sizes: array of Integer;
+  MaxPositiveSize: Integer;
+  MaxPositiveIndex: Integer;
 begin
   Size := 0;
-  RecognizerIndex := -1;
   NoMatchOrEof := False;
+
+  // initialize recognizer responses
+  // prime all with "partial"
+  RecognizerResponses := TRecognizerResponses.Create(Length(FRecognizers));
+  SetLength(Sizes, Length(FRecognizers));
+
   repeat
     Next := FReader.Read;
     if Next.Kind <> ckEof then
@@ -115,18 +166,28 @@ begin
       Buffer[Size - 1] := Next;
 
       { find which recognizer can work with the buffer, if any }
-      NextRecognizerIndex := Recognize(Buffer);
-      if NextRecognizerIndex = -1 then
+      for i := Low(FRecognizers) to High(FRecognizers) do
       begin
-        NoMatchOrEof := True;
-        FReader.UnRead(Next);
-        Dec(Size);
-        SetLength(Buffer, Size);
-      end
-      else
-      begin
-        RecognizerIndex := NextRecognizerIndex;
-      end
+        LastResponse := RecognizerResponses.GetLastResponse(i);
+        if LastResponse <> rNegative then
+        begin
+          Recognition := FRecognizers[i].Recognize(Buffer);
+          RecognizerResponses.SetLastResponse(i, Recognition);
+          if Recognition = rPositive then
+          begin
+            // remember the Buffer size at this point for this guy
+            Sizes[i] := Size;
+          end
+          else if (Recognition = rNegative) and (LastResponse = rPartial) then
+          begin
+            // this recognizer got disqualified without ever reaching the goal
+            Sizes[i] := 0;
+          end
+        end
+      end;
+
+      // exit loop if everyone is done
+      NoMatchOrEof := RecognizerResponses.CountByRecognition(rNegative) = Length(FRecognizers);
     end
     else
     begin
@@ -134,9 +195,31 @@ begin
       NoMatchOrEof := True;
     end
   until NoMatchOrEof;
-  Result.Kind := RecognizerIndex;
-  if RecognizerIndex >= 0 then
+
+  // out of all the positive responses, which one was the longest?
+  // this allows to have tokens '>=' and '>' and let '>=' win
+  MaxPositiveSize := 0;
+  MaxPositiveIndex := -1;
+  for i := Low(FRecognizers) to High(FRecognizers) do
   begin
+    if Sizes[i] > MaxPositiveSize then
+    begin
+      MaxPositiveSize := Sizes[i];
+      MaxPositiveIndex := i;
+    end;
+  end;
+
+  // unread any extra 'CharOrNewLine' back into the reader
+  while Size > MaxPositiveSize do begin
+    Dec(Size);
+    FReader.UnRead(Buffer[Size]);
+    SetLength(Buffer, Size);
+  end;
+
+  Result.Kind := MaxPositiveIndex;
+  if MaxPositiveIndex >= 0 then
+  begin
+    // fill-in the result based on the buffer
     Result.Position.Start := FRowCol;
     Result.Text := '';
     for i := Low(Buffer) To High(Buffer) do
@@ -162,18 +245,7 @@ begin
   end;
 end;
 
-function TTokenizer.Recognize(Buffer: TCharOrNewLineArray): Integer;
-var
-  i: Integer;
-begin
-  i := Low(FRecognizers);
-  while (i <= High(FRecognizers)) and (not FRecognizers[i].Recognize(Buffer)) do
-    Inc(i);
-  if i <= High(FRecognizers) then
-    Result := i
-  else
-    Result := -1
-end;
+(* Undo Tokenizer *)
 
 constructor TUndoTokenizer.Create(Tokenizer: TTokenizer);
 begin

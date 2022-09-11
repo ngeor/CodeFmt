@@ -84,8 +84,8 @@ type
 function TSimpleParser.Parse(Source: TUndoTokenizer): TParseResult<TFmt>;
 var
   Next: TToken;
-  SourceTokens: array of TTokenType = [ttEol, ttWhiteSpace, ttDigits, ttIdentifier, ttKeyword, ttUnknown];
-  DestTokens: array of THigherTokenType = [htCRLF, htSpace, htNumber, htIdentifier, htKeyword, htUnknown];
+  SourceTokens: array of TTokenType = [ttEol, ttWhiteSpace, ttDigits, ttKeyword, ttIdentifier, ttUnknown];
+  DestTokens: array of THigherTokenType = [htCRLF, htSpace, htNumber, htKeyword, htIdentifier, htUnknown];
   i: Integer;
 begin
   Next := Source.Read;
@@ -215,21 +215,7 @@ end;
 
 function PreProcessorDirective: TParser<TTokenLinkedList>;
 begin
-  Result := Seq(FilterToken(ttPound), TManyTokensParser.Create(NoEol));
-end;
-
-function ArrayContains(hay: array of String; needle: String): Boolean;
-var
-  i: Integer;
-begin
-  Result := False;
-
-  for i := Low(hay) to High(hay) do
-    if hay[i] = needle then
-    begin
-      Result := True;
-      break;
-    end;
+  Result := Seq(FilterToken(ttPound), TManyTokensParser.Create(FilterTokens([ttIdentifier, ttKeyword])));
 end;
 
 function CreateParser: TParser<TFmt>;
