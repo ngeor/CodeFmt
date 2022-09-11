@@ -16,7 +16,7 @@ type
 
 implementation
 
-uses TokenTypes, Tokenizers, Recognizers, Parsers, ParseResult;
+uses TokenTypes, Tokenizers, Recognizers, Parsers, ParseResult, TokenParsers;
 
 (* Recognizers *)
 
