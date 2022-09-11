@@ -184,13 +184,7 @@ end;
 
 function CreateParser: TParser<TFmt>;
 begin
-  Result := TOrParser<TFmt>.Create(
-    CommentParser,
-    TOrParser<TFmt>.Create(
-      SectionParser,
-      TSimpleParser.Create
-    )
-  );
+  Result := CommentParser.OrElse(SectionParser).OrElse(TSimpleParser.Create);
 end;
 
 procedure TNewEditorConfigLexer.FormatStream(InputStream: TStream);

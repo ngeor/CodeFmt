@@ -17,6 +17,7 @@ type
   public
     function Parse(Source: TUndoTokenizer): TParseResult<T>; virtual; abstract;
     procedure Undo(Source: TUndoTokenizer; Data: T); virtual; abstract;
+    function OrElse(Next: TParser<T>): TParser<T>;
   end;
 
   (* TokenKind *)
@@ -53,6 +54,7 @@ type
 
 function Seq<L, R>(Left: TParser<L>; Right: TParser<R>): TParser<TPair<L, R>>; overload;
 function Seq(Left: TParser<TTokenLinkedList>; Right: TParser<TTokenLinkedList>): TParser<TTokenLinkedList>; overload;
+
 type
   (* Map *)
   TMapper<T, U> = function(x : T): U;
@@ -82,6 +84,7 @@ type
   end;
 
 type
+  (* Or *)
   TOrParser<T> = class(TParser<T>)
   private
     FLeft: TParser<T>;
@@ -116,6 +119,11 @@ type
 
 
 implementation
+
+function TParser<T>.OrElse(Next: TParser<T>): TParser<T>;
+begin
+  Result := TOrParser<T>.Create(Self, Next);
+end;
 
 (* TokenKind *)
 
