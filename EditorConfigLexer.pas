@@ -16,7 +16,7 @@ type
 
 implementation
 
-uses TokenTypes, Tokenizers, Recognizers, Parsers;
+uses TokenTypes, Tokenizers, Recognizers, Parsers, ParseResult;
 
 (* Recognizers *)
 
@@ -58,12 +58,6 @@ end;
 (* Parsers *)
 
 type
-  TFmt = record
-    Text: String;
-    Kind: THigherTokenType;
-  end;
-
-type
   (* For editor config, covers most simple cases *)
   TSimpleParser = class(TParser<TFmt>)
   public
@@ -80,18 +74,14 @@ var
 begin
   Next := Source.Read;
   If Next.Kind < 0 Then
-    Result.Success := False
+    Result := FailedParseResult<TFmt>()
   else
   begin
     i := Low(SourceTokens);
     while (i <= High(SourceTokens)) and not Result.Success do
     begin
       if Ord(SourceTokens[i]) = Next.Kind then
-      begin
-        Result.Success := True;
-        Result.Data.Text := Next.Text;
-        Result.Data.Kind := DestTokens[i];
-      end
+        Result := SuccessParseResult<TFmt>(CreateFmt(Next.Text, DestTokens[i]))
       else
         Inc(i);
     end;

@@ -5,15 +5,9 @@ unit Parsers;
 interface
 
 uses
-  Classes, SysUtils, Tokenizers;
+  Classes, SysUtils, Tokenizers, ParseResult;
 
 type
-  { The result of the parsing operation }
-  TParseResult<T> = record
-    Success: Boolean;
-    Data: T;
-  end;
-
   { Base class for all parsers }
   TParser<T> = class
   public
@@ -133,7 +127,6 @@ type
     procedure Undo(Source: TUndoTokenizer; Data: TTokenLinkedList); override;
   end;
 
-
 implementation
 
 function TParser<T>.OrElse(Next: TParser<T>): TParser<T>;
@@ -165,8 +158,8 @@ begin
       Result := Next
     else
     begin
-      Result.Success := False;
       Undo(Source, Next.Data);
+      Result := FailedParseResult<T>();
     end
   end
   else
@@ -194,14 +187,15 @@ end;
 function TManyParser<T, U>.Parse(Source: TUndoTokenizer): TParseResult<U>;
 var
   Next: TParseResult<T>;
+  Data: U;
 begin
-  Result.Success := True;
-  Result.Data := CreateSeed;
+  Data := CreateSeed;
   repeat
     Next := FParser.Parse(Source);
     if Next.Success then
-      Collect(Result.Data, Next.Data);
+      Collect(Data, Next.Data);
   until not Next.Success;
+  Result := SuccessParseResult<U>(Data);
 end;
 
 (* Map *)
@@ -222,9 +216,10 @@ var
   Next: TParseResult<T>;
 begin
   Next := FParser.Parse(Source);
-  Result.Success := Next.Success;
   if Next.Success then
-    Result.Data := Map(Next.Data);
+    Result := SuccessParseResult<U>(Map(Next.Data))
+  else
+    Result := FailedParseResult<U>()
 end;
 
 (* Binary *)
@@ -254,20 +249,15 @@ begin
   begin
     Right := FRight.Parse(Source);
     if Right.Success then
-    begin
-      Result.Success := True;
-      Result.Data := Combine(Left.Data, Right.Data);
-    end
+      Result := SuccessParseResult<T>(Combine(Left.Data, Right.Data))
     else
     begin
       FLeft.Undo(Source, Left.Data);
-      Result.Success := False;
+      Result := FailedParseResult<T>();
     end
   end
   else
-  begin
-    Result.Success := False;
-  end
+    Result := FailedParseResult<T>()
 end;
 
 (* And *)
@@ -321,9 +311,14 @@ end;
 (* AnyToken *)
 
 function TAnyTokenParser.Parse(Source: TUndoTokenizer): TParseResult<TToken>;
+var
+  Next: TToken;
 begin
-  Result.Data := Source.Read;
-  Result.Success := Result.Data.Kind >= 0;
+  Next := Source.Read;
+  if Next.Kind >= 0 then
+    Result := SuccessParseResult<TToken>(Next)
+  else
+    Result := FailedParseResult<TToken>()
 end;
 
 procedure TAnyTokenParser.Undo(Source: TUndoTokenizer; Data: TToken);
