@@ -5,16 +5,14 @@ unit Recognizers;
 interface
 
 uses
-  Classes, SysUtils, CharOrNewLineReaders;
+  Classes, SysUtils, CharReaders;
 
 type
-
-  TCharOrNewLineArray = array of TCharOrNewLine;
 
   TRecognition = (rNegative, rPartial, rPositive);
 
   TTokenRecognizer = class
-    function Recognize(Buffer: TCharOrNewLineArray): TRecognition; virtual; abstract;
+    function Recognize(Buffer: String): TRecognition; virtual; abstract;
   end;
 
   TTokenRecognizers = array of TTokenRecognizer;
@@ -26,7 +24,7 @@ type
     FPredicate: TCharPredicate;
   public
     constructor Create(Predicate: TCharPredicate);
-    function Recognize(Buffer: TCharOrNewLineArray): TRecognition; override;
+    function Recognize(Buffer: String): TRecognition; override;
   end;
 
   TLeadingPredicateRecognizer = class(TTokenRecognizer)
@@ -35,17 +33,17 @@ type
     FRemainingPredicate: TCharPredicate;
   public
     constructor Create(LeadingPredicate: TCharPredicate; RemainingPredicate: TCharPredicate);
-    function Recognize(Buffer: TCharOrNewLineArray): TRecognition; override;
+    function Recognize(Buffer: String): TRecognition; override;
   end;
 
   TAnyRecognizer = class(TTokenRecognizer)
   public
-    function Recognize(Buffer: TCharOrNewLineArray): TRecognition; override;
+    function Recognize(Buffer: String): TRecognition; override;
   end;
 
   TNewLineRecognizer = class(TTokenRecognizer)
   public
-    function Recognize(Buffer: TCharOrNewLineArray): TRecognition; override;
+    function Recognize(Buffer: String): TRecognition; override;
   end;
 
   TSingleCharRecognizer = class(TTokenRecognizer)
@@ -53,7 +51,7 @@ type
     FAllowedChars: String;
   public
     constructor Create(AllowedChars: String);
-    function Recognize(Buffer: TCharOrNewLineArray): TRecognition; override;
+    function Recognize(Buffer: String): TRecognition; override;
   end;
 
   TStringRecognizer = class(TTokenRecognizer)
@@ -61,7 +59,7 @@ type
     FValue: String;
   public
     constructor Create(Value: String);
-    function Recognize(Buffer: TCharOrNewLineArray): TRecognition; override;
+    function Recognize(Buffer: String): TRecognition; override;
   end;
 
   TKeywordRecognizer = class(TTokenRecognizer)
@@ -70,7 +68,7 @@ type
   public
     constructor Create(Keywords: array of String);
     destructor Destroy; override;
-    function Recognize(Buffer: TCharOrNewLineArray): TRecognition; override;
+    function Recognize(Buffer: String): TRecognition; override;
   end;
 
 function IsDigit(Ch: Char): Boolean;
@@ -94,6 +92,14 @@ begin
   Result := (Ch = ' ') or (Ch = #9);
 end;
 
+function PositiveOrNegative(Flag: Boolean): TRecognition;
+begin
+  if Flag then
+    Result := rPositive
+  else
+    Result := rNegative
+end;
+
 (* Predicate *)
 
 constructor TPredicateRecognizer.Create(Predicate: TCharPredicate);
@@ -101,17 +107,14 @@ begin
   FPredicate := Predicate;
 end;
 
-function TPredicateRecognizer.Recognize(Buffer: TCharOrNewLineArray): TRecognition;
+function TPredicateRecognizer.Recognize(Buffer: String): TRecognition;
 var
   i: Integer;
 begin
-  i := Low(Buffer);
-  while (i <= High(Buffer)) and (Buffer[i].Kind = ckChar) and (FPredicate(Buffer[i].Ch)) do
+  i := 1;
+  while (i <= Length(Buffer)) and FPredicate(Buffer[i]) do
     Inc(i);
-  if i > High(Buffer) then
-    Result := rPositive
-  else
-    Result := rNegative
+  Result := PositiveOrNegative(i > Length(Buffer));
 end;
 
 (* LeadingPredicate *)
@@ -122,41 +125,36 @@ begin
   FRemainingPredicate := RemainingPredicate;
 end;
 
-function TLeadingPredicateRecognizer.Recognize(Buffer: TCharOrNewLineArray): TRecognition;
+function TLeadingPredicateRecognizer.Recognize(Buffer: String): TRecognition;
 var
   i: Integer;
 begin
-  i := Low(Buffer);
-  while (i <= High(Buffer)) and (Buffer[i].Kind = ckChar) and (
-    ((i = 0) and FLeadingPredicate(Buffer[i].Ch))
+  i := 1;
+  while (i <= Length(Buffer)) and (
+    ((i = 1) and FLeadingPredicate(Buffer[i]))
     or
-    ((i > 0) and FRemainingPredicate(Buffer[i].Ch))
+    ((i > 1) and FRemainingPredicate(Buffer[i]))
   ) do
     Inc(i);
-  if i > High(Buffer) then
-    Result := rPositive
-  else
-    Result := rNegative
+  Result := PositiveOrNegative(i > Length(Buffer));
 end;
 
 (* Any *)
 
-function TAnyRecognizer.Recognize(Buffer: TCharOrNewLineArray): TRecognition;
+function TAnyRecognizer.Recognize(Buffer: String): TRecognition;
 begin
-  // recognize any *single* "LineRead"
-  if Length(Buffer) = 1 then
-    Result := rPositive
-  else
-    Result := rNegative
+  // recognize any *single* character, usefull as fallback
+  Result := PositiveOrNegative(Length(Buffer) = 1);
 end;
 
 (* New Line *)
-function TNewLineRecognizer.Recognize(Buffer: TCharOrNewLineArray): TRecognition;
+function TNewLineRecognizer.Recognize(Buffer: String): TRecognition;
 begin
-  if (Length(Buffer) = 1) and (Buffer[0].Kind = ckEol) then
-    Result := rPositive
-  else
-    Result := rNegative
+  Result := PositiveOrNegative((
+    ( (Length(Buffer) = 1) and (Buffer[1] in [#10, #13]) )
+    or
+    ( Buffer = #13#10 )
+  ));
 end;
 
 (* Single Char *)
@@ -166,17 +164,9 @@ begin
   FAllowedChars := AllowedChars;
 end;
 
-function TSingleCharRecognizer.Recognize(Buffer: TCharOrNewLineArray): TRecognition;
+function TSingleCharRecognizer.Recognize(Buffer: String): TRecognition;
 begin
-  if (Length(Buffer) = 1) and (Buffer[0].Kind = ckChar) then
-  begin
-    if Pos(Buffer[0].Ch, FAllowedChars) > 0 then
-      Result := rPositive
-    else
-      Result := rNegative
-  end
-  else
-    Result := rNegative;
+  Result := PositiveOrNegative( (Length(Buffer) = 1) and (Pos(Buffer[1], FAllowedChars) > 0) );
 end;
 
 (* Specific String *)
@@ -188,16 +178,16 @@ begin
   FValue := Value;
 end;
 
-function TStringRecognizer.Recognize(Buffer: TCharOrNewLineArray): TRecognition;
+function TStringRecognizer.Recognize(Buffer: String): TRecognition;
 var
   i: Integer;
 begin
-  i := Low(Buffer);
-  while (i <= High(Buffer)) and (i < Length(FValue)) and (Buffer[i].Kind = ckChar) and (Buffer[i].Ch = FValue.Chars[i]) do
+  i := 1;
+  while (i <= Length(Buffer)) and (i <= Length(FValue)) and (Buffer[i] = FValue[i]) do
     Inc(i);
-  if i > High(Buffer) then
+  if i > Length(Buffer) then
   begin
-    if i = Length(FValue) then
+    if i > Length(FValue) then
       Result := rPositive
     else
       Result := rPartial
@@ -224,34 +214,23 @@ begin
   inherited Destroy;
 end;
 
-function TKeywordRecognizer.Recognize(Buffer: TCharOrNewLineArray): TRecognition;
+function TKeywordRecognizer.Recognize(Buffer: String): TRecognition;
 var
-  Keyword: String;
   Index: Integer;
 begin
-  Index := Low(Buffer);
-  Keyword := '';
-  while (Index <= High(Buffer)) and (Buffer[Index].Kind = ckChar) do
-  begin
-    Keyword := Keyword + Buffer[Index].Ch;
-    Inc(Index);
-  end;
-  if (Index > High(Buffer)) and (Keyword <> '') then
-    if FKeywords.Find(Keyword, Index) then
-      Result := rPositive
-    else
-    begin
-      // search one by one
-      Index := 0;
-      while (Index < FKeywords.Count) and (not FKeywords[Index].StartsWith(Keyword)) do
-        Inc(Index);
-      if Index < FKeywords.Count then
-        Result := rPartial
-      else
-        Result := rNegative
-    end
+  if FKeywords.Find(Buffer, Index) then
+    Result := rPositive
   else
-    Result := rNegative
+  begin
+    // search one by one
+    Index := 0;
+    while (Index < FKeywords.Count) and (not FKeywords[Index].StartsWith(Buffer)) do
+      Inc(Index);
+    if Index < FKeywords.Count then
+      Result := rPartial
+    else
+      Result := rNegative
+  end
 end;
 
 end.
