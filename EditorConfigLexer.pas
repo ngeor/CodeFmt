@@ -28,7 +28,6 @@ type
     Text: String;
     Kind: TTokenType;
   end;
-  TFmts = array of TFmt;
 
 function CreateRecognizers: TTokenRecognizers;
 begin
@@ -183,7 +182,7 @@ begin
   );
 end;
 
-function CreateFmtParser: TParser<TFmt>;
+function CreateParser: TParser<TFmt>;
 begin
   Result := TOrParser<TFmt>.Create(
     CommentParser,
@@ -194,48 +193,23 @@ begin
   );
 end;
 
-function MapFmtList(List: TList): TFmts;
-var
-  i: Integer;
-  p: ^TFmt;
-begin
-  SetLength(Result, List.Count);
-  for i := 0 to List.Count - 1 do
-  begin
-    p := List[i];
-    Result[i] := p^;
-    Dispose(p);
-  end;
-  List.Free();
-end;
-
-function CreateParser: TParser<TFmts>;
-begin
-  Result := Map<TList, TFmts>(
-    TManyParser<TFmt>.Create(CreateFmtParser),
-    MapFmtList
-  );
-end;
-
 procedure TNewEditorConfigLexer.FormatStream(InputStream: TStream);
 var
   Tokenizer: TUndoTokenizer;
-  Parser: TParser<TFmts>;
-  Result: TParseResult<TFmts>;
-  Fmts: TFmts;
-  i: Integer;
+  Parser: TParser<TFmt>;
+  Result: TParseResult<TFmt>;
+  Fmt: TFmt;
 begin
   Tokenizer := CreateUndoTokenizer(InputStream, CreateRecognizers);
   Parser := CreateParser;
-  Result := Parser.Parse(Tokenizer);
-  if Result.Success then
-  begin
-    Fmts := Result.Data;
-    for i := Low(Fmts) to High(fmts) do
+  repeat
+    Result := Parser.Parse(Tokenizer);
+    if Result.Success then
     begin
-      TokenFound(Fmts[i].Text, Fmts[i].Kind);
+      Fmt := Result.Data;
+      TokenFound(Fmt.Text, Fmt.Kind);
     end;
-  end;
+  until not Result.Success;
   Tokenizer.Free;
   Parser.Free;
 end;
