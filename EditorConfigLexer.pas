@@ -26,7 +26,7 @@ end;
 type
   TFmt = record
     Text: String;
-    Kind: TTokenType;
+    Kind: THigherTokenType;
   end;
 
 function CreateRecognizers: TTokenRecognizers;
@@ -68,27 +68,27 @@ begin
     0: begin
       Result.Success := True;
       Result.Data.Text := Next.Text;
-      Result.Data.Kind := ttCRLF;
+      Result.Data.Kind := htCRLF;
     end;
     1: begin
       Result.Success := True;
       Result.Data.Text := Next.Text;
-      Result.Data.Kind := ttSpace;
+      Result.Data.Kind := htSpace;
     end;
     2: begin
       Result.Success := True;
       Result.Data.Text := Next.Text;
-      Result.Data.Kind := ttNumber;
+      Result.Data.Kind := htNumber;
     end;
     6: begin
       Result.Success := True;
       Result.Data.Text := Next.Text;
-      Result.Data.Kind := ttIdentifier;
+      Result.Data.Kind := htIdentifier;
     end;
     7: begin
       Result.Success := True;
       Result.Data.Text := Next.Text;
-      Result.Data.Kind := ttUnknown;
+      Result.Data.Kind := htUnknown;
     end;
     else
     begin
@@ -137,7 +137,7 @@ end;
 function MapComment(Input: TPair<TToken, String>): TFmt;
 begin
   Result.Text := '#' + Input.Right;
-  Result.Kind := ttComment;
+  Result.Kind := htComment;
 end;
 
 type
@@ -153,7 +153,7 @@ begin
     { list is LIFO }
     Buffer := List.Pop.Text + Buffer;
   List.Free;
-  Result.Kind := ttDirective; // just to see it bold
+  Result.Kind := htDirective; // just to see it bold
   Result.Text := Buffer;
 end;
 

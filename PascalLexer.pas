@@ -98,7 +98,7 @@ begin
       StreamTokenizer.Next;
     end;
 
-    CurrentTokenFound(ttComment);
+    CurrentTokenFound(htComment);
   end;
 end;
 
@@ -109,7 +109,7 @@ begin
     { print accumulated comment so far }
     if not StreamTokenizer.IsEmptyToken then
     begin
-      CurrentTokenFound(ttComment);
+      CurrentTokenFound(htComment);
     end;
 
     { print CRLF }
@@ -136,7 +136,7 @@ begin
     if not StreamTokenizer.IsEof then
       StreamTokenizer.Next;
 
-    CurrentTokenFound(ttComment);
+    CurrentTokenFound(htComment);
   end;
 end;
 
@@ -149,20 +149,20 @@ begin
       StreamTokenizer.Next;
 
     StreamTokenizer.Next;
-    CurrentTokenFound(ttString);
+    CurrentTokenFound(htString);
   end;
 end;  { HandleString }
 
 procedure TPascalLexer.HandleChar;
 begin
   if StreamTokenizer.Scan(['#'], ['0'..'9']) then
-    CurrentTokenFound(ttString);
+    CurrentTokenFound(htString);
 end;
 
 procedure TPascalLexer.HandleHexNumber;
 begin
   if StreamTokenizer.Scan(['$'], ['0'..'9', 'A'..'F', 'a'..'f']) then
-    CurrentTokenFound(ttNumber);
+    CurrentTokenFound(htNumber);
 end;
 
 function BinarySearch(hay: array of String; needle: String): Boolean;
@@ -245,7 +245,7 @@ end;
 procedure TPascalLexer.HandleIdentifier;
 var
   token: String;
-  tokenType: TTokenType;
+  tokenType: THigherTokenType;
 begin
   (* cannot start with number but it can contain one *)
   if StreamTokenizer.Scan(['A'..'Z', 'a'..'z', '_'],
@@ -256,12 +256,12 @@ begin
     if IsKeyword(token) then
     begin
       if IsDirective(token) then
-        tokenType := ttDirective
+        tokenType := htDirective
       else
-        tokenType := ttKeyWord;
+        tokenType := htKeyWord;
     end
     else
-      tokenType := ttIdentifier;
+      tokenType := htIdentifier;
 
     TokenFound(token, tokenType);
   end;
@@ -270,7 +270,7 @@ end;
 procedure TPascalLexer.HandleNumber;
 begin
   if StreamTokenizer.Scan(['0'..'9'], ['0'..'9', '.', 'e', 'E']) then
-    CurrentTokenFound(ttNumber);
+    CurrentTokenFound(htNumber);
 end;
 
 procedure TPascalLexer.HandleSymbol;
@@ -279,7 +279,7 @@ begin
     '['..'^', '`', '~']) then
   begin
     StreamTokenizer.Next;
-    CurrentTokenFound(ttSymbol);
+    CurrentTokenFound(htSymbol);
   end;
 end;
 

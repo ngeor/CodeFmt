@@ -5,19 +5,19 @@ unit TokenTypes;
 interface
 
 type
-  TTokenType = (
-    ttAssembler,
-    ttComment,
-    ttCRLF,
-    ttDirective,
-    ttIdentifier,
-    ttKeyWord,
-    ttNumber,
-    ttPreProcessor,
-    ttSpace,
-    ttString,
-    ttSymbol,
-    ttUnknown
+  THigherTokenType = (
+    htAssembler,
+    htComment,
+    htCRLF,
+    htDirective,
+    htIdentifier,
+    htKeyWord,
+    htNumber,
+    htPreProcessor,
+    htSpace,
+    htString,
+    htSymbol,
+    htUnknown
     );
 
 implementation

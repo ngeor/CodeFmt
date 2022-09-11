@@ -56,7 +56,7 @@ begin
       StreamTokenizer.Next;
 
     StreamTokenizer.Next;
-    CurrentTokenFound(ttString);
+    CurrentTokenFound(htString);
   end;
 end;
 
@@ -77,16 +77,16 @@ end;
 procedure TCppLexer.HandleIdentifier;
 var
   token: String;
-  tokenType: TTokenType;
+  tokenType: THigherTokenType;
 begin
   if StreamTokenizer.Scan(['a'..'z', 'A'..'Z'], ['a'..'z', 'A'..'Z', '_']) then
   begin
     token := StreamTokenizer.TokenAndMark;
 
     if ArrayContains(CppKeyWords, token) then
-      tokenType := ttKeyWord
+      tokenType := htKeyWord
     else
-      tokenType := ttIdentifier;
+      tokenType := htIdentifier;
 
     TokenFound(token, tokenType);
   end;
@@ -99,7 +99,7 @@ begin
     while (not StreamTokenizer.IsEof) and (not StreamTokenizer.IsEoln) do
       StreamTokenizer.Next;
 
-    CurrentTokenFound(ttPreProcessor);
+    CurrentTokenFound(htPreProcessor);
   end;
 end;
 
@@ -108,7 +108,7 @@ begin
   if StreamTokenizer.Current in ['(', ')', ';', '{', '}', '[', ']'] then
   begin
     StreamTokenizer.Next;
-    CurrentTokenFound(ttSymbol);
+    CurrentTokenFound(htSymbol);
   end;
 end;
 

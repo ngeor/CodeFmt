@@ -10,7 +10,7 @@ uses
 type
   { A callback method that is called when a token is found. }
   TLexerTokenFound = procedure(const Token: String;
-    const TokenType: TTokenType) of object;
+    const TokenType: THigherTokenType) of object;
 
   { Base class for a lexer }
   TLexerBase = class
@@ -30,7 +30,7 @@ type
     { Holds the stream tokenizer }
     FStreamTokenizer: TStreamTokenizer;
   protected
-    procedure CurrentTokenFound(const TokenType: TTokenType);
+    procedure CurrentTokenFound(const TokenType: THigherTokenType);
     procedure Scan; virtual;
 
     { Gets the stream tokenizer }
@@ -81,7 +81,7 @@ begin
       begin
         (* unexpected token, read one char and print it out immediately *)
         FStreamTokenizer.Next;
-        CurrentTokenFound(ttUnknown);
+        CurrentTokenFound(htUnknown);
       end;
     end;
   finally
@@ -89,7 +89,7 @@ begin
   end;
 end;
 
-procedure TOldLexerBase.CurrentTokenFound(const TokenType: TTokenType);
+procedure TOldLexerBase.CurrentTokenFound(const TokenType: THigherTokenType);
 begin
   TokenFound(FStreamTokenizer.TokenAndMark, TokenType);
 end;
@@ -105,12 +105,12 @@ begin
   begin
     StreamTokenizer.Next;
     StreamTokenizer.Next;
-    TokenFound(StreamTokenizer.TokenAndMark, ttCRLF);
+    TokenFound(StreamTokenizer.TokenAndMark, htCRLF);
   end
   else if (StreamTokenizer.Current in [#13, #10]) then
   begin
     StreamTokenizer.Next;
-    TokenFound(StreamTokenizer.TokenAndMark, ttCRLF);
+    TokenFound(StreamTokenizer.TokenAndMark, htCRLF);
   end;
 end;
 
@@ -118,7 +118,7 @@ procedure HandleSpace(StreamTokenizer: TStreamTokenizer; TokenFound: TLexerToken
 begin
   if StreamTokenizer.Scan([#1..#9, #11, #12, #14..#32],
     [#1..#9, #11, #12, #14..#32]) then
-    TokenFound(StreamTokenizer.TokenAndMark, ttSpace);
+    TokenFound(StreamTokenizer.TokenAndMark, htSpace);
 end;
 
 procedure HandleSlashesComment(StreamTokenizer: TStreamTokenizer;
@@ -135,7 +135,7 @@ begin
     while (not StreamTokenizer.IsEof) and (not StreamTokenizer.IsEoln) do
       StreamTokenizer.Next;
 
-    TokenFound(StreamTokenizer.TokenAndMark, ttComment);
+    TokenFound(StreamTokenizer.TokenAndMark, htComment);
   end;
 end;
 
