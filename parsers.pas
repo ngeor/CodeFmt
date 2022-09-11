@@ -5,7 +5,7 @@ unit Parsers;
 interface
 
 uses
-  Classes, SysUtils, Tokenizers, Types;
+  Classes, SysUtils, Tokenizers;
 
 type
   { The result of the parsing operation }
@@ -60,6 +60,22 @@ type
     function Parse(Source: TUndoTokenizer): TParseResult<U>; override;
   end;
 
+  TBinaryParser<L, R, T> = class(TParser<T>)
+  private
+    FLeft: TParser<L>;
+    FRight: TParser<R>;
+  public
+    constructor Create(Left: TParser<L>; Right: TParser<R>);
+    destructor Destroy; override;
+  end;
+
+  TAbstractAndParser<L, R, T> = class(TBinaryParser<L, R, T>)
+  protected
+    function Combine(Left: L; Right: R): T; virtual; abstract;
+  public
+    function Parse(Source: TUndoTokenizer): TParseResult<T>; override;
+  end;
+
   (* And *)
 
   TPair<L, R> = record
@@ -67,14 +83,10 @@ type
     Right: R;
   end;
 
-  TAndParser<L, R> = class(TParser<TPair<L, R>>)
-  private
-    FLeft: TParser<L>;
-    FRight: TParser<R>;
+  TAndParser<L, R> = class(TAbstractAndParser<L, R, TPair<L, R>>)
+  protected
+    function Combine(Left: L; Right: R): TPair<L, R>; override;
   public
-    constructor Create(Left: TParser<L>; Right: TParser<R>);
-    destructor Destroy; override;
-    function Parse(Source: TUndoTokenizer): TParseResult<TPair<L, R>>; override;
     procedure Undo(Source: TUndoTokenizer; Data: TPair<L, R>); override;
   end;
 
@@ -84,27 +96,9 @@ function Seq(Left: TParser<TToken>; Right: TParser<TTokenLinkedList>): TParser<T
 function Seq(Left: TParser<TTokenLinkedList>; Right: TParser<TToken>): TParser<TTokenLinkedList>; overload;
 
 type
-  (* Map *)
-  TMapper<T, U> = function(x : T): U;
-  TFunctionMapParser<T, U> = class(TMapParser<T, U>)
-  private
-    FMapper: TMapper<T, U>;
-  protected
-    function Map(Data: T): U; override;
-  public
-    constructor Create(Parser: TParser<T>; Mapper: TMapper<T, U>);
-    procedure Undo(Source: TUndoTokenizer; Data: U); override;
-  end;
-
-type
   (* Or *)
-  TOrParser<T> = class(TParser<T>)
-  private
-    FLeft: TParser<T>;
-    FRight: TParser<T>;
+  TOrParser<T> = class(TBinaryParser<T, T, T>)
   public
-    constructor Create(Left: TParser<T>; Right: TParser<T>);
-    destructor Destroy; override;
     function Parse(Source: TUndoTokenizer): TParseResult<T>; override;
     procedure Undo(Source: TUndoTokenizer; Data: T); override;
   end;
@@ -128,6 +122,13 @@ type
   protected
     function CreateSeed: TTokenLinkedList; override;
     procedure Collect(Aggregate: TTokenLinkedList; Data: TToken); override;
+  public
+    procedure Undo(Source: TUndoTokenizer; Data: TTokenLinkedList); override;
+  end;
+
+  TAndTokenListsParser = class(TAbstractAndParser<TTokenLinkedList, TTokenLinkedList, TTokenLinkedList>)
+  protected
+    function Combine(Left: TTokenLinkedList; Right: TTokenLinkedList): TTokenLinkedList; override;
   public
     procedure Undo(Source: TUndoTokenizer; Data: TTokenLinkedList); override;
   end;
@@ -226,22 +227,24 @@ begin
     Result.Data := Map(Next.Data);
 end;
 
-(* And *)
+(* Binary *)
 
-constructor TAndParser<L, R>.Create(Left: TParser<L>; Right: TParser<R>);
+constructor TBinaryParser<L, R, T>.Create(Left: TParser<L>; Right: TParser<R>);
 begin
   FLeft := Left;
   FRight := Right;
 end;
 
-destructor TAndParser<L, R>.Destroy;
+destructor TBinaryParser<L, R, T>.Destroy;
 begin
   FLeft.Free;
   FRight.Free;
   inherited Destroy;
 end;
 
-function TAndParser<L, R>.Parse(Source: TUndoTokenizer): TParseResult<TPair<L, R>>;
+(* AbstractAnd *)
+
+function TAbstractAndParser<L, R, T>.Parse(Source: TUndoTokenizer): TParseResult<T>;
 var
   Left: TParseResult<L>;
   Right: TParseResult<R>;
@@ -253,8 +256,7 @@ begin
     if Right.Success then
     begin
       Result.Success := True;
-      Result.Data.Left := Left.Data;
-      Result.Data.Right := Right.Data;
+      Result.Data := Combine(Left.Data, Right.Data);
     end
     else
     begin
@@ -268,6 +270,14 @@ begin
   end
 end;
 
+(* And *)
+
+function TAndParser<L, R>.Combine(Left: L; Right: R): TPair<L, R>;
+begin
+  Result.Left := Left;
+  Result.Right := Right;
+end;
+
 procedure TAndParser<L, R>.Undo(Source: TUndoTokenizer; Data: TPair<L, R>);
 begin
   FRight.Undo(Source, Data.Right);
@@ -279,31 +289,9 @@ begin
   Result := TAndParser<L, R>.Create(Left, Right);
 end;
 
-type
-  TListPair = TPair<TTokenLinkedList, TTokenLinkedList>;
-
-function MergeLists(Pair: TListPair): TTokenLinkedList;
-begin
-  if Pair.Right.IsEmpty then
-  begin
-    Pair.Right.Free;
-    Result := Pair.Left;
-  end
-  else
-  begin
-    Pair.Right.Append(Pair.Left);
-    Pair.Left.Free;
-    Result := Pair.Right;
-  end
-end;
-
 function Seq(Left: TParser<TTokenLinkedList>; Right: TParser<TTokenLinkedList>): TParser<TTokenLinkedList>; overload;
 begin
-  // TODO this is the only usage of TFunctionMapParser<T, U> try to remove it
-  Result := TFunctionMapParser<TListPair, TTokenLinkedList>.Create(
-    TAndParser<TTokenLinkedList, TTokenLinkedList>.Create(Left, Right),
-    MergeLists
-  );
+  Result := TAndTokenListsParser.Create(Left, Right);
 end;
 
 function Seq(Left: TParser<TToken>; Right: TParser<TTokenLinkedList>): TParser<TTokenLinkedList>; overload;
@@ -316,38 +304,7 @@ begin
   Result := Seq(Left, TMapTokenToTokenListParser.Create(Right));
 end;
 
-(* FunctionMap *)
-
-constructor TFunctionMapParser<T, U>.Create(Parser: TParser<T>; Mapper: TMapper<T, U>);
-begin
-  inherited Create(Parser);
-  FMapper := Mapper;
-end;
-
-function TFunctionMapParser<T, U>.Map(Data: T): U;
-begin
-  Result := FMapper(Data);
-end;
-
-procedure TFunctionMapParser<T, U>.Undo(Source: TUndoTokenizer; Data: U);
-begin
-  raise Exception.Create('not possible');
-end;
-
 (* Or *)
-
-constructor TOrParser<T>.Create(Left: TParser<T>; Right: TParser<T>);
-begin
-  FLeft := Left;
-  FRight := Right;
-end;
-
-destructor TOrParser<T>.Destroy;
-begin
-  FLeft.Free;
-  FRight.Free;
-  inherited Destroy;
-end;
 
 function TOrParser<T>.Parse(Source: TUndoTokenizer): TParseResult<T>;
 begin
@@ -402,6 +359,28 @@ begin
 end;
 
 procedure TManyTokensParser.Undo(Source: TUndoTokenizer; Data: TTokenLinkedList);
+begin
+  Source.Undo(Data);
+end;
+
+(* AndTokenLists *)
+
+function TAndTokenListsParser.Combine(Left: TTokenLinkedList; Right: TTokenLinkedList): TTokenLinkedList;
+begin
+  if Right.IsEmpty then
+  begin
+    Right.Free;
+    Result := Left;
+  end
+  else
+  begin
+    Right.Append(Left);
+    Left.Free;
+    Result := Right;
+  end
+end;
+
+procedure TAndTokenListsParser.Undo(Source: TUndoTokenizer; Data: TTokenLinkedList);
 begin
   Source.Undo(Data);
 end;
