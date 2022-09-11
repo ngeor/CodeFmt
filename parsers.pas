@@ -96,8 +96,6 @@ type
     procedure Undo(Source: TUndoTokenizer; Data: U); override;
   end;
 
-function Map<T, U>(Parser: TParser<T>; Mapper: TMapper<T, U>): TParser<U>;
-
 type
   (* Or *)
   TOrParser<T> = class(TParser<T>)
@@ -301,7 +299,8 @@ end;
 
 function Seq(Left: TParser<TTokenLinkedList>; Right: TParser<TTokenLinkedList>): TParser<TTokenLinkedList>; overload;
 begin
-  Result := Map<TListPair, TTokenLinkedList>(
+  // TODO this is the only usage of TFunctionMapParser<T, U> try to remove it
+  Result := TFunctionMapParser<TListPair, TTokenLinkedList>.Create(
     TAndParser<TTokenLinkedList, TTokenLinkedList>.Create(Left, Right),
     MergeLists
   );
@@ -333,11 +332,6 @@ end;
 procedure TFunctionMapParser<T, U>.Undo(Source: TUndoTokenizer; Data: U);
 begin
   raise Exception.Create('not possible');
-end;
-
-function Map<T, U>(Parser: TParser<T>; Mapper: TMapper<T, U>): TParser<U>;
-begin
-  Result := TFunctionMapParser<T, U>.Create(Parser, Mapper);
 end;
 
 (* Or *)

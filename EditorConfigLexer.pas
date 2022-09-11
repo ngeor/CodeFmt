@@ -28,6 +28,8 @@ end;
 type
   TTokenType = (ttEol, ttWhiteSpace, ttDigits, ttPound, ttLeftBracket, ttRightBracket, ttIdentifier, ttUnknown);
   TTokenTypeSet = set of TTokenType;
+const
+  AllTokenTypes: TTokenTypeSet = [ttEol..ttUnknown];
 
 function CreateRecognizer(TokenType: TTokenType): TTokenRecognizer;
 begin
@@ -47,10 +49,9 @@ end;
 function CreateRecognizers: TTokenRecognizers;
 var
   TokenType: TTokenType;
-  TokenTypes: TTokenTypeSet;
 begin
-  SetLength(Result, Ord(High(TokenTypes)) - Ord(Low(TokenTypes)) + 1);
-  for TokenType := Low(TokenTypes) to High(TokenTypes) do
+  SetLength(Result, Ord(High(AllTokenTypes)) - Ord(Low(AllTokenTypes)) + 1);
+  for TokenType := Low(AllTokenTypes) to High(AllTokenTypes) do
     Result[Ord(TokenType)] := CreateRecognizer(TokenType);
 end;
 
@@ -103,6 +104,7 @@ begin
   raise Exception.Create('oops');
 end;
 
+(* TokenTypeFilterParser *)
 
 type
   TTokenTypeFilterParser = class(TFilterParser<TToken>)
@@ -142,48 +144,26 @@ begin
   Result := TTokenTypeFilterParser.Create(TAnyTokenParser.Create, TokenTypes);
 end;
 
+(* TokenListToFmtMapper *)
+
 type
-  TUntilEolParser = class(TParser<String>)
+  TListToFmtMapper = class(TMapParser<TTokenLinkedList, TFmt>)
+  private
+    FKind: THigherTokenType;
+  protected
+    function Map(List: TTokenLinkedList): TFmt; override;
   public
-    function Parse(Source: TUndoTokenizer): TParseResult<String>; override;
-    procedure Undo(Source: TUndoTokenizer; Data: String); override;
+    constructor Create(Parser: TParser<TTokenLinkedList>; Kind: THigherTokenType);
+    procedure Undo(Source: TUndoTokenizer; Data: TFmt); override;
   end;
 
-function TUntilEolParser.Parse(Source: TUndoTokenizer): TParseResult<String>;
-var
-  Next: TToken;
-  Buffer: String;
+constructor TListToFmtMapper.Create(Parser: TParser<TTokenLinkedList>; Kind: THigherTokenType);
 begin
-  Buffer := '';
-  repeat
-    Next := Source.Read;
-    if Next.Kind > 0 { not eof nor eol } then
-    begin
-      Buffer := Buffer + Next.Text;
-    end
-    else if Next.Kind = 0 { eol } then
-      Source.Undo(Next);
-  until Next.Kind <= 0;
-  Result.Success := True;
-  Result.Data := Buffer;
+  inherited Create(Parser);
+  FKind := Kind;
 end;
 
-procedure TUntilEolParser.Undo(Source: TUndoTokenizer; Data: String);
-begin
-  raise Exception.Create('oops');
-end;
-
-function MapComment(Input: TPair<TToken, String>): TFmt;
-begin
-  Result.Text := '#' + Input.Right;
-  Result.Kind := htComment;
-end;
-
-type
-  TTokenAndString = TPair<TToken, String>;
-
-// [test]
-function SectionMapper(List: TTokenLinkedList): TFmt;
+function TListToFmtMapper.Map(List: TTokenLinkedList): TFmt;
 var
   Buffer: String;
 begin
@@ -192,13 +172,20 @@ begin
     { list is LIFO }
     Buffer := List.Pop.Text + Buffer;
   List.Free;
-  Result.Kind := htDirective; // just to see it bold
+  Result.Kind := FKind;
   Result.Text := Buffer;
 end;
 
+procedure TListToFmtMapper.Undo(Source: TUndoTokenizer; Data: TFmt);
+begin
+  raise Exception.Create('TListToFmtMapper.Undo is not possible');
+end;
+
+// [section]
+
 function SectionParser: TParser<TFmt>;
 begin
-  Result := Map<TTokenLinkedList, TFmt>(
+  Result := TListToFmtMapper.Create(
     Seq(
       Seq(
         FilterToken(ttLeftBracket),
@@ -206,18 +193,23 @@ begin
       ),
       FilterToken(ttRightBracket)
     ),
-    SectionMapper
+    htDirective
   );
+end;
+
+function NoEol: TParser<TToken>;
+begin
+  Result := FilterTokens(AllTokenTypes - [ttEol]);
 end;
 
 function CommentParser: TParser<TFmt>;
 begin
-  Result := Map<TTokenAndString, TFmt>(
-    Seq<TToken, String>(
+  Result := TListToFmtMapper.Create(
+    Seq(
       FilterToken(ttPound),
-      TUntilEolParser.Create
+      TManyTokensParser.Create(NoEol)
     ),
-    MapComment
+    htComment
   );
 end;
 
