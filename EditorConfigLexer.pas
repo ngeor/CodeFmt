@@ -191,19 +191,19 @@ procedure TNewEditorConfigLexer.FormatStream(InputStream: TStream);
 var
   Tokenizer: TUndoTokenizer;
   Parser: TParser<TFmt>;
-  Result: TParseResult<TFmt>;
+  Next: TParseResult<TFmt>;
   Fmt: TFmt;
 begin
   Tokenizer := CreateUndoTokenizer(InputStream, CreateRecognizers);
   Parser := CreateParser;
   repeat
-    Result := Parser.Parse(Tokenizer);
-    if Result.Success then
+    Next := Parser.Parse(Tokenizer);
+    if Next.Success then
     begin
-      Fmt := Result.Data;
+      Fmt := Next.Data;
       TokenFound(Fmt.Text, Fmt.Kind);
     end;
-  until not Result.Success;
+  until not Next.Success;
   Tokenizer.Free;
   Parser.Free;
 end;
