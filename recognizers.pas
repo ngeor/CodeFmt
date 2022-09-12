@@ -5,7 +5,7 @@ unit Recognizers;
 interface
 
 uses
-  Classes, SysUtils, CharReaders;
+  Classes, SysUtils;
 
 type
 

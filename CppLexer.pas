@@ -72,7 +72,7 @@ end;
 
 function FilterToken(TokenType: TTokenType): TParser<TToken>;
 begin
-  Result := TTokenTypeFilterParser.Create(TAnyTokenParser.Create, Ord(TokenType));
+  Result := FilterTokenType(Ord(TokenType));
 end;
 
 function FilterTokens(TokenTypes: TTokenTypeSet): TParser<TToken>;
@@ -87,14 +87,14 @@ begin
     x[Length(x) - 1] := Ord(TokenType);
   end;
 
-  Result := TTokenTypeFilterParser.Create(TAnyTokenParser.Create, x);
+  Result := FilterTokenTypes(x);
 end;
 
 (* Simple Parser maps tokens almost as-is from one enum to another *)
 
 function SimpleParser(TokenType: TTokenType; HigherTokenType: THigherTokenType): TParser<TFmt>; overload;
 begin
-  Result := TListToFmtMapper.Create(TMapTokenToTokenListParser.Create(FilterToken(TokenType)), HigherTokenType);
+  Result := TListToFmtMapper.Create(MapTokenToList(FilterToken(TokenType)), HigherTokenType);
 end;
 
 function SimpleParser: TParser<TFmt>; overload;
@@ -110,16 +110,16 @@ end;
 
 (* NoEol *)
 
-function NoEol: TParser<TToken>;
+function NoEol: TParser<TTokenLinkedList>;
 begin
-  Result := FilterTokens(AllTokenTypes - [ttEol]);
+  Result := ManyTokens(FilterTokens(AllTokenTypes - [ttEol]));
 end;
 
 // Slash comments
 
 function SlashComments: TParser<TTokenLinkedList>;
 begin
-  Result := Seq(FilterToken(ttDoubleSlash), TManyTokensParser.Create(NoEol));
+  Result := Seq(FilterToken(ttDoubleSlash), NoEol);
 end;
 
 // String
@@ -127,7 +127,7 @@ end;
 function StringParser: TParser<TTokenLinkedList>;
 begin
   Result := Seq(
-    Seq(FilterToken(ttQuote), TManyTokensParser.Create(FilterTokens(AllTokenTypes - [ttEol, ttQuote]))),
+    Seq(FilterToken(ttQuote), ManyTokens(FilterTokens(AllTokenTypes - [ttEol, ttQuote]))),
     FilterToken(ttQuote)
   );
 end;
@@ -136,7 +136,7 @@ end;
 
 function PreProcessorDirective: TParser<TTokenLinkedList>;
 begin
-  Result := Seq(FilterToken(ttPound), TManyTokensParser.Create(FilterTokens([ttIdentifier, ttKeyword])));
+  Result := Seq(FilterToken(ttPound), ManyTokens(FilterTokens([ttIdentifier, ttKeyword])));
 end;
 
 function CreateParser: TParser<TFmt>;

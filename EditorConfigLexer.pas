@@ -56,7 +56,7 @@ end;
 
 function FilterToken(TokenType: TTokenType): TParser<TToken>;
 begin
-  Result := TTokenTypeFilterParser.Create(TAnyTokenParser.Create, Ord(TokenType));
+  Result := FilterTokenType(Ord(TokenType));
 end;
 
 function FilterTokens(TokenTypes: TTokenTypeSet): TParser<TToken>;
@@ -71,14 +71,14 @@ begin
     x[Length(x) - 1] := Ord(TokenType);
   end;
 
-  Result := TTokenTypeFilterParser.Create(TAnyTokenParser.Create, x);
+  Result := FilterTokenTypes(x);
 end;
 
 (* Simple Parser maps tokens almost as-is from one enum to another *)
 
 function SimpleParser(TokenType: TTokenType; HigherTokenType: THigherTokenType): TParser<TFmt>; overload;
 begin
-  Result := TListToFmtMapper.Create(TMapTokenToTokenListParser.Create(FilterToken(TokenType)), HigherTokenType);
+  Result := TListToFmtMapper.Create(MapTokenToList(FilterToken(TokenType)), HigherTokenType);
 end;
 
 function SimpleParser: TParser<TFmt>; overload;
@@ -100,7 +100,7 @@ begin
     Seq(
       Seq(
         FilterToken(ttLeftBracket),
-        TManyTokensParser.Create(FilterTokens([ttWhiteSpace, ttDigits, ttIdentifier, ttUnknown]))
+        ManyTokens(FilterTokens([ttWhiteSpace, ttDigits, ttIdentifier, ttUnknown]))
       ),
       FilterToken(ttRightBracket)
     ),
@@ -108,18 +108,15 @@ begin
   );
 end;
 
-function NoEol: TParser<TToken>;
+function NoEol: TParser<TTokenLinkedList>;
 begin
-  Result := FilterTokens(AllTokenTypes - [ttEol]);
+  Result := ManyTokens(FilterTokens(AllTokenTypes - [ttEol]));
 end;
 
 function CommentParser: TParser<TFmt>;
 begin
   Result := TListToFmtMapper.Create(
-    Seq(
-      FilterToken(ttPound),
-      TManyTokensParser.Create(NoEol)
-    ),
+    Seq(FilterToken(ttPound), NoEol),
     htComment
   );
 end;

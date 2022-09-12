@@ -7,10 +7,6 @@ interface
 uses
   Classes, SysUtils, Types, Parsers, ParseResult, BinaryParsers, Tokenizers;
 
-function Seq(Left: TParser<TTokenLinkedList>; Right: TParser<TTokenLinkedList>): TParser<TTokenLinkedList>; overload;
-function Seq(Left: TParser<TToken>; Right: TParser<TTokenLinkedList>): TParser<TTokenLinkedList>; overload;
-function Seq(Left: TParser<TTokenLinkedList>; Right: TParser<TToken>): TParser<TTokenLinkedList>; overload;
-
 type
   TAnyTokenParser = class(TParser<TToken>)
   public
@@ -52,6 +48,17 @@ type
     procedure Undo(Source: TUndoTokenizer; Data: TTokenLinkedList); override;
   end;
 
+function Seq(Left: TParser<TTokenLinkedList>; Right: TParser<TTokenLinkedList>): TParser<TTokenLinkedList>; overload;
+function Seq(Left: TParser<TToken>; Right: TParser<TTokenLinkedList>): TParser<TTokenLinkedList>; overload;
+function Seq(Left: TParser<TTokenLinkedList>; Right: TParser<TToken>): TParser<TTokenLinkedList>; overload;
+
+function FilterTokenType(TokenType: Byte): TParser<TToken>; overload;
+function FilterTokenTypes(TokenTypes: TByteDynArray): TParser<TToken>; overload;
+
+function MapTokenToList(Parser: TParser<TToken>): TParser<TTokenLinkedList>; overload;
+
+function ManyTokens(Parser: TParser<TToken>): TParser<TTokenLinkedList>; overload;
+
 implementation
 
 function Seq(Left: TParser<TTokenLinkedList>; Right: TParser<TTokenLinkedList>): TParser<TTokenLinkedList>; overload;
@@ -61,12 +68,32 @@ end;
 
 function Seq(Left: TParser<TToken>; Right: TParser<TTokenLinkedList>): TParser<TTokenLinkedList>; overload;
 begin
-  Result := Seq(TMapTokenToTokenListParser.Create(Left), Right);
+  Result := Seq(MapTokenToList(Left), Right);
 end;
 
 function Seq(Left: TParser<TTokenLinkedList>; Right: TParser<TToken>): TParser<TTokenLinkedList>; overload;
 begin
-  Result := Seq(Left, TMapTokenToTokenListParser.Create(Right));
+  Result := Seq(Left, MapTokenToList(Right));
+end;
+
+function FilterTokenType(TokenType: Byte): TParser<TToken>; overload;
+begin
+  Result := TTokenTypeFilterParser.Create(TAnyTokenParser.Create, TokenType);
+end;
+
+function FilterTokenTypes(TokenTypes: TByteDynArray): TParser<TToken>; overload;
+begin
+  Result := TTokenTypeFilterParser.Create(TAnyTokenParser.Create, TokenTypes);
+end;
+
+function MapTokenToList(Parser: TParser<TToken>): TParser<TTokenLinkedList>; overload;
+begin
+  Result := TMapTokenToTokenListParser.Create(Parser);
+end;
+
+function ManyTokens(Parser: TParser<TToken>): TParser<TTokenLinkedList>; overload;
+begin
+  Result := TManyTokensParser.Create(Parser);
 end;
 
 (* AnyToken *)
