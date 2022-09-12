@@ -5,18 +5,14 @@ unit EditorConfigParser;
 interface
 
 uses
-  Classes, SysUtils, LexerBase;
+  SysUtils, Classes, Recognizers, Parsers, TokenTypes;
 
-type
-  TNewEditorConfigLexer = class(TLexerBase)
-  public
-    procedure FormatStream(InputStream: TStream); override;
-  end;
-
+function CreateRecognizers: TTokenRecognizers;
+function CreateParser: TParser<TFmt>;
 
 implementation
 
-uses Types, TokenTypes, Tokenizers, Recognizers, Parsers, ParseResult, TokenParsers, CodeFmtParsers;
+uses Types, Tokenizers, ParseResult, TokenParsers, CodeFmtParsers;
 
 (* Recognizers *)
 
@@ -124,29 +120,6 @@ end;
 function CreateParser: TParser<TFmt>;
 begin
   Result := CommentParser.OrElse(SectionParser).OrElse(SimpleParser);
-end;
-
-// TODO move this to a base class or drop the class altogether and keep a function only
-// i.e. Process(InputStream, TokenFoundHandler)
-procedure TNewEditorConfigLexer.FormatStream(InputStream: TStream);
-var
-  Tokenizer: TUndoTokenizer;
-  Parser: TParser<TFmt>;
-  Next: TParseResult<TFmt>;
-  Fmt: TFmt;
-begin
-  Tokenizer := CreateUndoTokenizer(InputStream, CreateRecognizers);
-  Parser := CreateParser;
-  repeat
-    Next := Parser.Parse(Tokenizer);
-    if Next.Success then
-    begin
-      Fmt := Next.Data;
-      TokenFound(Fmt.Text, Fmt.Kind);
-    end;
-  until not Next.Success;
-  Tokenizer.Free;
-  Parser.Free;
 end;
 
 end.
