@@ -1,16 +1,18 @@
-unit CppLexer;
+unit EditorConfigParser;
 
-{$MODE Delphi}
+{$mode delphi}
 
 interface
 
-uses SysUtils, Classes, LexerBase;
+uses
+  Classes, SysUtils, LexerBase;
 
 type
-  TCppLexer = class(TLexerBase)
+  TNewEditorConfigLexer = class(TLexerBase)
   public
     procedure FormatStream(InputStream: TStream); override;
   end;
+
 
 implementation
 
@@ -18,23 +20,8 @@ uses Types, TokenTypes, Tokenizers, Recognizers, Parsers, ParseResult, TokenPars
 
 (* Recognizers *)
 
-const
-  CppKeyWords: array [0..59] of String =
-    ('_cs', '_ds', '_es', '_export', '_fastcall',
-    '_loadds', '_saveregs', '_seg', '_ss', 'asm',
-    'auto', 'break', 'case', 'cdecl', 'char',
-    'class', 'const', 'continue', 'default', 'delete',
-    'do', 'double', 'else', 'enum', 'extern',
-    'far', 'float', 'for', 'friend', 'goto',
-    'huge', 'if', 'inline', 'int', 'interrupt',
-    'long', 'near', 'new', 'operator', 'pascal',
-    'private', 'protected', 'public', 'register', 'return',
-    'short', 'signed', 'sizeof', 'static', 'struct',
-    'switch', 'template', 'this', 'typedef', 'union',
-    'unsigned', 'virtual', 'void', 'volatile', 'while');
-
 type
-  TTokenType = (ttEol, ttWhiteSpace, ttDigits, ttPound, ttDoubleQuote, ttDoubleSlash, ttKeyword, ttIdentifier, ttUnknown);
+  TTokenType = (ttEol, ttWhiteSpace, ttDigits, ttPound, ttLeftBracket, ttRightBracket, ttIdentifier, ttUnknown);
   TTokenTypeSet = set of TTokenType;
 const
   AllTokenTypes: TTokenTypeSet = [ttEol..ttUnknown];
@@ -46,9 +33,8 @@ begin
     ttWhiteSpace: Result := TPredicateRecognizer.Create(IsWhiteSpace);
     ttDigits: Result := TPredicateRecognizer.Create(IsDigit);
     ttPound: Result := TSingleCharRecognizer.Create('#');
-    ttDoubleQuote: Result := TSingleCharRecognizer.Create('"');
-    ttDoubleSlash: Result := TStringRecognizer.Create('//');
-    ttKeyword: Result := TKeywordRecognizer.Create(CppKeyWords, csSensitive);
+    ttLeftBracket: Result := TSingleCharRecognizer.Create('[');
+    ttRightBracket: Result := TSingleCharRecognizer.Create(']');
     ttIdentifier: Result := IdentifierRecognizer;
     ttUnknown: Result := TAnyRecognizer.Create;
     else raise Exception.Create('Unknown token type')
@@ -97,8 +83,8 @@ end;
 
 function SimpleParser: TParser<TFmt>; overload;
 var
-  SourceTokens: array of TTokenType = [ttEol, ttWhiteSpace, ttDigits, ttKeyword, ttIdentifier, ttUnknown];
-  DestTokens: array of THigherTokenType = [htCRLF, htSpace, htNumber, htKeyword, htIdentifier, htUnknown];
+  SourceTokens: array of TTokenType = [ttEol, ttWhiteSpace, ttDigits, ttIdentifier, ttUnknown];
+  DestTokens: array of THigherTokenType = [htCRLF, htSpace, htNumber, htIdentifier, htUnknown];
   i: Integer;
 begin
   Result := nil;
@@ -106,46 +92,43 @@ begin
     Result := OrElse<TFmt>(Result, SimpleParser(SourceTokens[i], DestTokens[i]));
 end;
 
-(* NoEol *)
+// [section]
+
+function SectionParser: TParser<TFmt>;
+begin
+  Result := TListToFmtMapper.Create(
+    Seq(
+      Seq(
+        FilterToken(ttLeftBracket),
+        ManyTokens(FilterTokens([ttWhiteSpace, ttDigits, ttIdentifier, ttUnknown]))
+      ),
+      FilterToken(ttRightBracket)
+    ),
+    htDirective
+  );
+end;
 
 function NoEol: TParser<TTokenLinkedList>;
 begin
   Result := ManyTokens(FilterTokens(AllTokenTypes - [ttEol]));
 end;
 
-// Slash comments
-
-function SlashComments: TParser<TTokenLinkedList>;
+function CommentParser: TParser<TFmt>;
 begin
-  Result := Seq(FilterToken(ttDoubleSlash), NoEol);
-end;
-
-// String
-
-function StringParser: TParser<TTokenLinkedList>;
-begin
-  Result := Seq(
-    Seq(FilterToken(ttDoubleQuote), ManyTokens(FilterTokens(AllTokenTypes - [ttEol, ttDoubleQuote]))),
-    FilterToken(ttDoubleQuote)
+  Result := TListToFmtMapper.Create(
+    Seq(FilterToken(ttPound), NoEol),
+    htComment
   );
-end;
-
-// Pre-processor directive
-
-function PreProcessorDirective: TParser<TTokenLinkedList>;
-begin
-  Result := Seq(FilterToken(ttPound), ManyTokens(FilterTokens([ttIdentifier, ttKeyword])));
 end;
 
 function CreateParser: TParser<TFmt>;
 begin
-  Result := TListToFmtMapper.Create(SlashComments, htComment)
-    .OrElse(TListToFmtMapper.Create(StringParser, htString))
-    .OrElse(TListToFmtMapper.Create(PreProcessorDirective, htDirective))
-    .OrElse(SimpleParser);
+  Result := CommentParser.OrElse(SectionParser).OrElse(SimpleParser);
 end;
 
-procedure TCppLexer.FormatStream(InputStream: TStream);
+// TODO move this to a base class or drop the class altogether and keep a function only
+// i.e. Process(InputStream, TokenFoundHandler)
+procedure TNewEditorConfigLexer.FormatStream(InputStream: TStream);
 var
   Tokenizer: TUndoTokenizer;
   Parser: TParser<TFmt>;

@@ -1,4 +1,4 @@
-unit PascalLexer;
+unit PascalParser;
 
 {$MODE Delphi}
 

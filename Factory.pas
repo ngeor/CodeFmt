@@ -24,7 +24,7 @@ procedure Process(FormatterType: TFormatterType; DocumentType: TDocumentType;
 implementation
 
 uses
-  LexerBase, PascalLexer, CppLexer, EditorConfigLexer,
+  LexerBase, PascalParser, CppParser, EditorConfigParser,
   FormatterBase, RTFFormatter, HTMLFormatter;
 
 function CreateFormatter(FormatterType: TFormatterType;

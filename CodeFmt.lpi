@@ -61,12 +61,14 @@
         <ResourceBaseClass Value="Form"/>
       </Unit2>
       <Unit3>
-        <Filename Value="CppLexer.pas"/>
+        <Filename Value="cppparser.pas"/>
         <IsPartOfProject Value="True"/>
+        <UnitName Value="CppParser"/>
       </Unit3>
       <Unit4>
-        <Filename Value="PascalLexer.pas"/>
+        <Filename Value="pascalparser.pas"/>
         <IsPartOfProject Value="True"/>
+        <UnitName Value="PascalParser"/>
       </Unit4>
       <Unit5>
         <Filename Value="FormatterBase.pas"/>
@@ -77,8 +79,9 @@
         <IsPartOfProject Value="True"/>
       </Unit6>
       <Unit7>
-        <Filename Value="EditorConfigLexer.pas"/>
+        <Filename Value="editorconfigparser.pas"/>
         <IsPartOfProject Value="True"/>
+        <UnitName Value="EditorConfigParser"/>
       </Unit7>
       <Unit8>
         <Filename Value="Factory.pas"/>
