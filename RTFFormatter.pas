@@ -14,22 +14,22 @@ type
   public
     procedure WriteFooter; override;
     procedure WriteHeader; override;
-    procedure WriteToken(const Token: String; const TokenType: TTokenType); override;
+    procedure WriteToken(const Token: String; const TokenType: THigherTokenType); override;
   end;
 
 implementation
 
-procedure TRTFFormatter.WriteToken(const Token: String; const TokenType: TTokenType);
+procedure TRTFFormatter.WriteToken(const Token: String; const TokenType: THigherTokenType);
 var
   escapedToken, FormatToken: String;
 begin
   escapedToken := SetSpecial(Token);
   case TokenType of
-    ttCRLF:
+    htCRLF:
       FormatToken := '\par' + escapedToken;
-    ttDirective, ttKeyword:
+    htDirective, htKeyWord:
       FormatToken := '\b ' + escapedToken + '\b0 ';
-    ttComment:
+    htComment:
       FormatToken := '\cf1\i ' + escapedToken + '\cf0\i0 ';
     else
       FormatToken := escapedToken;

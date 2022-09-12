@@ -14,27 +14,29 @@ type
   public
     procedure WriteFooter; override;
     procedure WriteHeader; override;
-    procedure WriteToken(const Token: String; const TokenType: TTokenType); override;
+    procedure WriteToken(const Token: String; const TokenType: THigherTokenType); override;
   end;
 
 implementation
 
-procedure THTMLFormatter.WriteToken(const Token: String; const TokenType: TTokenType);
+procedure THTMLFormatter.WriteToken(const Token: String; const TokenType: THigherTokenType);
 var
   escapedToken, FormatToken: String;
 begin
   escapedToken := SetSpecial(Token);
   case TokenType of
-    ttCRLF:
+    htCRLF:
       FormatToken := '<BR>' + escapedToken;
-    ttDirective, ttKeyWord:
+    htDirective, htKeyWord:
       FormatToken := '<B>' + escapedToken + '</B>';
-    ttComment:
+    htComment:
       FormatToken := '<FONT COLOR=#000080><I>' + escapedToken + '</I></FONT>';
-    ttUnknown:
+    htUnknown:
       FormatToken := '<FONT COLOR=#FF0000><B>' + escapedToken + '</B></FONT>';
-    ttPreProcessor:
+    htPreProcessor:
       FormatToken := '<FONT COLOR=#808080>' + escapedToken + '</FONT>';
+    htString:
+      FormatToken := '<FONT COLOR=#000080>' + escapedToken + '</FONT>';
     else
       FormatToken := escapedToken;
   end;

@@ -5,21 +5,35 @@ unit TokenTypes;
 interface
 
 type
-  TTokenType = (
-    ttAssembler,
-    ttComment,
-    ttCRLF,
-    ttDirective,
-    ttIdentifier,
-    ttKeyWord,
-    ttNumber,
-    ttPreProcessor,
-    ttSpace,
-    ttString,
-    ttSymbol,
-    ttUnknown
-    );
+  { A least-common-denominator token type that is understood by the RTF/HTML formatters }
+  THigherTokenType = (
+    htAssembler,
+    htComment,
+    htCRLF,
+    htDirective,
+    htIdentifier,
+    htKeyWord,
+    htNumber,
+    htPreProcessor,
+    htSpace,
+    htString,
+    htSymbol,
+    htUnknown
+  );
+
+  TFmt = record
+    Text: String;
+    Kind: THigherTokenType;
+  end;
+
+function CreateFmt(Text: String; Kind: THigherTokenType): TFmt;
 
 implementation
+
+function CreateFmt(Text: String; Kind: THigherTokenType): TFmt;
+begin
+  Result.Text := Text;
+  Result.Kind := Kind;
+end;
 
 end.

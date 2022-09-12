@@ -41,7 +41,7 @@
         <PackageName Value="LCL"/>
       </Item2>
     </RequiredPackages>
-    <Units Count="14">
+    <Units Count="20">
       <Unit0>
         <Filename Value="CodeFmt.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -61,50 +61,85 @@
         <ResourceBaseClass Value="Form"/>
       </Unit2>
       <Unit3>
-        <Filename Value="CppLexer.pas"/>
+        <Filename Value="cppparser.pas"/>
         <IsPartOfProject Value="True"/>
+        <UnitName Value="CppParser"/>
       </Unit3>
       <Unit4>
-        <Filename Value="PascalLexer.pas"/>
+        <Filename Value="pascalparser.pas"/>
         <IsPartOfProject Value="True"/>
+        <UnitName Value="PascalParser"/>
       </Unit4>
       <Unit5>
-        <Filename Value="StreamTokenizer.pas"/>
+        <Filename Value="FormatterBase.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit5>
       <Unit6>
-        <Filename Value="FormatterBase.pas"/>
+        <Filename Value="editorconfigparser.pas"/>
         <IsPartOfProject Value="True"/>
+        <UnitName Value="EditorConfigParser"/>
       </Unit6>
       <Unit7>
-        <Filename Value="LexerBase.pas"/>
+        <Filename Value="Factory.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit7>
       <Unit8>
-        <Filename Value="EditorConfigLexer.pas"/>
+        <Filename Value="TokenTypes.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit8>
       <Unit9>
-        <Filename Value="Factory.pas"/>
+        <Filename Value="HTMLFormatter.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit9>
       <Unit10>
-        <Filename Value="TokenTypes.pas"/>
+        <Filename Value="RTFFormatter.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit10>
       <Unit11>
-        <Filename Value="HTMLFormatter.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit11>
-      <Unit12>
-        <Filename Value="RTFFormatter.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit12>
-      <Unit13>
         <Filename Value="documenttypes.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="DocumentTypes"/>
+      </Unit11>
+      <Unit12>
+        <Filename Value="tokenizers.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="Tokenizers"/>
+      </Unit12>
+      <Unit13>
+        <Filename Value="charreaders.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="CharReaders"/>
       </Unit13>
+      <Unit14>
+        <Filename Value="recognizers.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="Recognizers"/>
+      </Unit14>
+      <Unit15>
+        <Filename Value="parsers.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="Parsers"/>
+      </Unit15>
+      <Unit16>
+        <Filename Value="parseresult.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="ParseResult"/>
+      </Unit16>
+      <Unit17>
+        <Filename Value="binaryparsers.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="BinaryParsers"/>
+      </Unit17>
+      <Unit18>
+        <Filename Value="tokenparsers.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="TokenParsers"/>
+      </Unit18>
+      <Unit19>
+        <Filename Value="codefmtparsers.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="CodeFmtParsers"/>
+      </Unit19>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
