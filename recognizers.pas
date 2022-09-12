@@ -31,8 +31,10 @@ type
   private
     FLeadingPredicate: TCharPredicate;
     FRemainingPredicate: TCharPredicate;
+    FPartialLength: Word;
   public
-    constructor Create(LeadingPredicate: TCharPredicate; RemainingPredicate: TCharPredicate);
+    constructor Create(LeadingPredicate: TCharPredicate; RemainingPredicate: TCharPredicate); overload;
+    constructor Create(LeadingPredicate: TCharPredicate; RemainingPredicate: TCharPredicate; PartialLength: Word); overload;
     function Recognize(Buffer: String): TRecognition; override;
   end;
 
@@ -62,11 +64,13 @@ type
     function Recognize(Buffer: String): TRecognition; override;
   end;
 
+  TKeywordCaseSensitivity = (csSensitive, csInsensitive);
   TKeywordRecognizer = class(TTokenRecognizer)
   private
     FKeywords: TStringList;
+    FCaseSensitivity: TKeywordCaseSensitivity;
   public
-    constructor Create(Keywords: array of String);
+    constructor Create(Keywords: array of String; CaseSensitivity: TKeywordCaseSensitivity);
     destructor Destroy; override;
     function Recognize(Buffer: String): TRecognition; override;
   end;
@@ -123,6 +127,14 @@ constructor TLeadingPredicateRecognizer.Create(LeadingPredicate: TCharPredicate;
 begin
   FLeadingPredicate := LeadingPredicate;
   FRemainingPredicate := RemainingPredicate;
+  FPartialLength := 0;
+end;
+
+constructor TLeadingPredicateRecognizer.Create(LeadingPredicate: TCharPredicate; RemainingPredicate: TCharPredicate; PartialLength: Word);
+begin
+  FLeadingPredicate := LeadingPredicate;
+  FRemainingPredicate := RemainingPredicate;
+  FPartialLength := PartialLength;
 end;
 
 function TLeadingPredicateRecognizer.Recognize(Buffer: String): TRecognition;
@@ -136,7 +148,15 @@ begin
     ((i > 1) and FRemainingPredicate(Buffer[i]))
   ) do
     Inc(i);
-  Result := PositiveOrNegative(i > Length(Buffer));
+  if i > Length(Buffer) then
+  begin
+    if Length(Buffer) > FPartialLength then
+      Result := rPositive
+    else
+      Result := rPartial
+  end
+  else
+    Result := rNegative
 end;
 
 (* Any *)
@@ -198,14 +218,18 @@ end;
 
 (* Keywords *)
 
-constructor TKeywordRecognizer.Create(Keywords: array of String);
+constructor TKeywordRecognizer.Create(Keywords: array of String; CaseSensitivity: TKeywordCaseSensitivity);
 var
   Keyword: String;
 begin
+  FCaseSensitivity := CaseSensitivity;
   FKeywords := TStringList.Create;
   FKeywords.Sorted := True;
   for Keyword in Keywords do
-    FKeywords.Add(Keyword);
+    if FCaseSensitivity = csSensitive then
+      FKeywords.Add(Keyword)
+    else
+      FKeywords.Add(UpCase(Keyword))
 end;
 
 destructor TKeywordRecognizer.Destroy;
@@ -217,14 +241,19 @@ end;
 function TKeywordRecognizer.Recognize(Buffer: String): TRecognition;
 var
   Index: Integer;
+  Needle: String;
 begin
-  if FKeywords.Find(Buffer, Index) then
+  if FCaseSensitivity = csSensitive then
+    Needle := Buffer
+  else
+    Needle := UpCase(Buffer);
+  if FKeywords.Find(Needle, Index) then
     Result := rPositive
   else
   begin
     // search one by one
     Index := 0;
-    while (Index < FKeywords.Count) and (not FKeywords[Index].StartsWith(Buffer)) do
+    while (Index < FKeywords.Count) and (not FKeywords[Index].StartsWith(Needle)) do
       Inc(Index);
     if Index < FKeywords.Count then
       Result := rPartial

@@ -35,6 +35,8 @@ begin
       FormatToken := '<FONT COLOR=#FF0000><B>' + escapedToken + '</B></FONT>';
     htPreProcessor:
       FormatToken := '<FONT COLOR=#808080>' + escapedToken + '</FONT>';
+    htString:
+      FormatToken := '<FONT COLOR=#000080>' + escapedToken + '</FONT>';
     else
       FormatToken := escapedToken;
   end;

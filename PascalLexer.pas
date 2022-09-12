@@ -7,27 +7,16 @@ interface
 uses SysUtils, Classes, LexerBase;
 
 type
-  TPascalLexer = class(TOldLexerBase)
-  private
-    procedure HandleAnsiComments;
-    procedure HandleBorC;
-    procedure HandleString;
-    procedure HandleIdentifier;
-    procedure HandleNumber;
-    procedure HandleSymbol;
-    procedure HandleMultilineComment;
-    procedure HandleChar;
-    procedure HandleHexNumber;
-    function IsDiffKey(aToken: String): Boolean;
-    function IsDirective(aToken: String): Boolean;
-    function IsKeyword(aToken: String): Boolean;
-  protected
-    procedure Scan; override;
+  TPascalLexer = class(TLexerBase)
+  public
+    procedure FormatStream(InputStream: TStream); override;
   end;
 
 implementation
 
-uses TokenTypes;
+uses Types, TokenTypes, Tokenizers, Recognizers, Parsers, ParseResult, TokenParsers, CodeFmtParsers;
+
+(* Recognizers *)
 
 const
   PasKeywords: array[0..98] of String =
@@ -47,240 +36,213 @@ const
     'UNIT', 'UNTIL', 'USES', 'VAR', 'VIRTUAL', 'WHILE', 'WITH', 'WRITE',
     'WRITEONLY', 'XOR');
 
-  PasDirectives: array[0..10] of String =
-    ('AUTOMATED', 'INDEX', 'NAME', 'NODEFAULT', 'READ', 'READONLY',
-    'RESIDENT', 'STORED', 'STRINGRECOURCE', 'WRITE', 'WRITEONLY');
+type
+  TTokenType = (
+    ttEol,
+    ttWhiteSpace,
+    ttDigits,
+    ttSingleQuote,
+    ttDollarSign,
+    ttDoubleSlash,
+    ttAnsiCommentBegin,
+    ttAnsiCommentEnd,
+    ttBraceOpen,
+    ttBraceClose,
+    ttHexNumber,
+    ttChar,
+    ttKeyword,
+    ttIdentifier,
+    ttUnknown
+  );
+  TTokenTypeSet = set of TTokenType;
+const
+  AllTokenTypes: TTokenTypeSet = [ttEol..ttUnknown];
 
-  PasDiffKeys: array[0..6] of String =
-    ('END', 'FUNCTION', 'PRIVATE', 'PROCEDURE', 'PRODECTED',
-    'PUBLIC', 'PUBLISHED');
-
-procedure TPascalLexer.Scan;
+function IsPound(Ch: Char): Boolean;
 begin
-  HandleCRLF(StreamTokenizer, TokenFound);
-  HandleSpace(StreamTokenizer, TokenFound);
-  HandleSlashesComment(StreamTokenizer, TokenFound);
-  HandleAnsiComments;
-  HandleIdentifier;
-  HandleNumber;
-  HandleBorC;
-  HandleSymbol;
-  HandleString;
-  HandleChar;
-  HandleHexNumber;
+  Result := Ch = '#';
 end;
 
-(*
-  Handles Ansi style comments, i.e. with parenthesis and stars.
-*)
-procedure TPascalLexer.HandleAnsiComments;
+function IsDollarSign(Ch: Char): Boolean;
+begin
+  Result := Ch = '$';
+end;
 
-  function IsEndOfAnsiComment: Boolean;
+function IsHexDigit(Ch: Char): Boolean;
+begin
+  Result := Ch in ['0'..'9', 'a'..'f', 'A'..'F'];
+end;
+
+function CreateRecognizer(TokenType: TTokenType): TTokenRecognizer;
+begin
+  case TokenType of
+    ttEol: Result := TNewLineRecognizer.Create;
+    ttWhiteSpace: Result := TPredicateRecognizer.Create(IsWhiteSpace);
+    ttDigits: Result := TPredicateRecognizer.Create(IsDigit);
+    ttSingleQuote: Result := TSingleCharRecognizer.Create(#39);
+    ttDollarSign: Result := TSingleCharRecognizer.Create('$');
+    ttDoubleSlash: Result := TStringRecognizer.Create('//');
+    ttAnsiCommentBegin: Result := TStringRecognizer.Create('(*');
+    ttAnsiCommentEnd: Result := TStringRecognizer.Create('*)');
+    ttBraceOpen: Result := TSingleCharRecognizer.Create('{');
+    ttBraceClose: Result := TSingleCharRecognizer.Create('}');
+    ttHexNumber: Result := TLeadingPredicateRecognizer.Create(IsDollarSign, IsHexDigit, 1);
+    ttChar: Result := TLeadingPredicateRecognizer.Create(IsPound, IsDigit);
+    ttKeyword: Result := TKeywordRecognizer.Create(PasKeyWords, csInsensitive);
+    ttIdentifier: Result := IdentifierRecognizer;
+    ttUnknown: Result := TAnyRecognizer.Create;
+    else raise Exception.Create('Unknown token type')
+  end;
+end;
+
+function CreateRecognizers: TTokenRecognizers;
+var
+  TokenType: TTokenType;
+begin
+  SetLength(Result, Ord(High(AllTokenTypes)) - Ord(Low(AllTokenTypes)) + 1);
+  for TokenType := Low(AllTokenTypes) to High(AllTokenTypes) do
+    Result[Ord(TokenType)] := CreateRecognizer(TokenType);
+end;
+
+(* Parsers *)
+
+(* TokenTypeFilterParser *)
+
+function FilterToken(TokenType: TTokenType): TParser<TToken>;
+begin
+  Result := FilterTokenType(Ord(TokenType));
+end;
+
+function FilterTokens(TokenTypes: TTokenTypeSet): TParser<TToken>;
+var
+  x: TByteDynArray;
+  TokenType: TTokenType;
+begin
+  SetLength(x, 0);
+  for TokenType in TokenTypes do
   begin
-    IsEndOfAnsiComment := (StreamTokenizer.Current = '*') and
-      (StreamTokenizer.PeekNext = ')');
+    SetLength(x, Length(x) + 1);
+    x[Length(x) - 1] := Ord(TokenType);
   end;
 
+  Result := FilterTokenTypes(x);
+end;
+
+(* Simple Parser maps tokens almost as-is from one enum to another *)
+
+function SimpleParser(TokenType: TTokenType; HigherTokenType: THigherTokenType): TParser<TFmt>; overload;
 begin
-  if (StreamTokenizer.Current = '(') and (StreamTokenizer.PeekNext = '*') then
-  begin
-    { read the '(' and the '*' }
-    StreamTokenizer.Next;
-    StreamTokenizer.Next;
+  Result := TListToFmtMapper.Create(MapTokenToList(FilterToken(TokenType)), HigherTokenType);
+end;
 
-    while (not StreamTokenizer.IsEof) and (not IsEndOfAnsiComment) do
-      HandleMultilineComment;
+function SimpleParser: TParser<TFmt>; overload;
+var
+  SourceTokens: array of TTokenType = [
+    ttEol,
+    ttWhiteSpace,
+    ttDigits,
+    ttHexNumber,
+    ttChar,
+    ttKeyword,
+    ttIdentifier,
+    ttUnknown
+  ];
+  DestTokens: array of THigherTokenType = [
+    htCRLF,
+    htSpace,
+    htNumber,
+    htNumber,
+    htString,
+    htKeyword,
+    htIdentifier,
+    htUnknown
+  ];
+  i: Integer;
+begin
+  Result := nil;
+  for i := Low(SourceTokens) to High(SourceTokens) do
+    Result := OrElse<TFmt>(Result, SimpleParser(SourceTokens[i], DestTokens[i]));
+end;
 
-    if not StreamTokenizer.IsEof then
+(* NoEol *)
+
+function NoEol: TParser<TTokenLinkedList>;
+begin
+  Result := ManyTokens(FilterTokens(AllTokenTypes - [ttEol]));
+end;
+
+// Slash comments
+
+function SlashComments: TParser<TTokenLinkedList>;
+begin
+  Result := Seq(FilterToken(ttDoubleSlash), NoEol);
+end;
+
+// String
+
+function StringParser: TParser<TTokenLinkedList>;
+begin
+  Result := Seq(
+    Seq(FilterToken(ttSingleQuote), ManyTokens(FilterTokens(AllTokenTypes - [ttEol, ttSingleQuote]))),
+    FilterToken(ttSingleQuote)
+  );
+end;
+
+// Ansi Comments
+
+function AnsiCommentsParser: TParser<TTokenLinkedList>;
+begin
+  Result := Seq(
+    Seq(
+      FilterToken(ttAnsiCommentBegin),
+      ManyTokens(FilterTokens(AllTokenTypes - [ttAnsiCommentEnd]))
+    ),
+    FilterToken(ttAnsiCommentEnd)
+  );
+end;
+
+// Borland Comments
+
+function BorlandCommentsParser: TParser<TTokenLinkedList>;
+begin
+  Result := Seq(
+    Seq(
+      FilterToken(ttBraceOpen),
+      ManyTokens(FilterTokens(AllTokenTypes - [ttBraceClose]))
+    ),
+    FilterToken(ttBraceClose)
+  );
+end;
+
+function CreateParser: TParser<TFmt>;
+begin
+  Result := TListToFmtMapper.Create(SlashComments, htComment)
+    .OrElse(TListToFmtMapper.Create(StringParser, htString))
+    .OrElse(TListToFmtMapper.Create(AnsiCommentsParser, htComment))
+    .OrElse(TListToFmtMapper.Create(BorlandCommentsParser, htComment))
+    .OrElse(SimpleParser);
+end;
+
+procedure TPascalLexer.FormatStream(InputStream: TStream);
+var
+  Tokenizer: TUndoTokenizer;
+  Parser: TParser<TFmt>;
+  Next: TParseResult<TFmt>;
+  Fmt: TFmt;
+begin
+  Tokenizer := CreateUndoTokenizer(InputStream, CreateRecognizers);
+  Parser := CreateParser;
+  repeat
+    Next := Parser.Parse(Tokenizer);
+    if Next.Success then
     begin
-      { read the closing *) part of the comment }
-      StreamTokenizer.Next;
-      StreamTokenizer.Next;
+      Fmt := Next.Data;
+      TokenFound(Fmt.Text, Fmt.Kind);
     end;
-
-    CurrentTokenFound(htComment);
-  end;
+  until not Next.Success;
+  Tokenizer.Free;
+  Parser.Free;
 end;
 
-procedure TPascalLexer.HandleMultilineComment;
-begin
-  if StreamTokenizer.IsEoln then
-  begin
-    { print accumulated comment so far }
-    if not StreamTokenizer.IsEmptyToken then
-    begin
-      CurrentTokenFound(htComment);
-    end;
-
-    { print CRLF }
-    HandleCRLF(StreamTokenizer, TokenFound);
-  end
-  else
-  begin
-    { carry on }
-    StreamTokenizer.Next;
-  end;
-end;
-
-{
-  Handles Borland style comments, i.e. with curly braces.
-}
-procedure TPascalLexer.HandleBorC;
-begin
-  if StreamTokenizer.Current = '{' then
-  begin
-    while (not StreamTokenizer.IsEof) and (StreamTokenizer.Current <> '}') do
-      HandleMultilineComment;
-
-    (* read the closing } part of the comment *)
-    if not StreamTokenizer.IsEof then
-      StreamTokenizer.Next;
-
-    CurrentTokenFound(htComment);
-  end;
-end;
-
-procedure TPascalLexer.HandleString;
-begin
-  if StreamTokenizer.Current = #39 then
-  begin
-    StreamTokenizer.Next;
-    while (not StreamTokenizer.IsEof) and (StreamTokenizer.Current <> #39) do
-      StreamTokenizer.Next;
-
-    StreamTokenizer.Next;
-    CurrentTokenFound(htString);
-  end;
-end;  { HandleString }
-
-procedure TPascalLexer.HandleChar;
-begin
-  if StreamTokenizer.Scan(['#'], ['0'..'9']) then
-    CurrentTokenFound(htString);
-end;
-
-procedure TPascalLexer.HandleHexNumber;
-begin
-  if StreamTokenizer.Scan(['$'], ['0'..'9', 'A'..'F', 'a'..'f']) then
-    CurrentTokenFound(htNumber);
-end;
-
-function BinarySearch(hay: array of String; needle: String): Boolean;
-var
-  First, Last, I, Compare: Integer;
-  Token: String;
-begin
-  First := Low(hay);
-  Last := High(hay);
-  Result := False;
-  Token := UpperCase(needle);
-  while First <= Last do
-  begin
-    I := (First + Last) shr 1;
-    Compare := CompareStr(hay[i], Token);
-    if Compare = 0 then
-    begin
-      Result := True;
-      break;
-    end
-    else
-    if Compare < 0 then
-      First := I + 1
-    else
-      Last := I - 1;
-  end;
-end;
-
-function TPascalLexer.IsDiffKey(aToken: String): Boolean;
-begin
-  Result := BinarySearch(PasDiffKeys, aToken);
-end;  { IsDiffKey }
-
-function TPascalLexer.IsDirective(aToken: String): Boolean;
-var
-  First, Last, I, Compare: Integer;
-  Token: String;
-  FDiffer: Boolean;
-begin
-  First := Low(PasDirectives);
-  Last := High(PasDirectives);
-  Result := False;
-  Token := UpperCase(aToken);
-  if CompareStr('PROPERTY', Token) = 0 then
-    FDiffer := True;
-  if IsDiffKey(Token) then
-    FDiffer := False;
-  while First <= Last do
-  begin
-    I := (First + Last) shr 1;
-    Compare := CompareStr(PasDirectives[i], Token);
-    if Compare = 0 then
-    begin
-      Result := True;
-      if FDiffer then
-      begin
-        Result := False;
-        if CompareStr('NAME', Token) = 0 then
-          Result := True;
-        if CompareStr('RESIDENT', Token) = 0 then
-          Result := True;
-        if CompareStr('STRINGRESOURCE', Token) = 0 then
-          Result := True;
-      end;
-      break;
-    end
-    else
-    if Compare < 0 then
-      First := I + 1
-    else
-      Last := I - 1;
-  end;
-end;
-
-function TPascalLexer.IsKeyword(aToken: String): Boolean;
-begin
-  Result := BinarySearch(PasKeywords, aToken);
-end;
-
-procedure TPascalLexer.HandleIdentifier;
-var
-  token: String;
-  tokenType: THigherTokenType;
-begin
-  (* cannot start with number but it can contain one *)
-  if StreamTokenizer.Scan(['A'..'Z', 'a'..'z', '_'],
-    ['A'..'Z', 'a'..'z', '0'..'9', '_']) then
-  begin
-    token := StreamTokenizer.TokenAndMark;
-
-    if IsKeyword(token) then
-    begin
-      if IsDirective(token) then
-        tokenType := htDirective
-      else
-        tokenType := htKeyWord;
-    end
-    else
-      tokenType := htIdentifier;
-
-    TokenFound(token, tokenType);
-  end;
-end;
-
-procedure TPascalLexer.HandleNumber;
-begin
-  if StreamTokenizer.Scan(['0'..'9'], ['0'..'9', '.', 'e', 'E']) then
-    CurrentTokenFound(htNumber);
-end;
-
-procedure TPascalLexer.HandleSymbol;
-begin
-  if (StreamTokenizer.Current in ['!', '"', '%', '&', '('..'/', ':'..'@',
-    '['..'^', '`', '~']) then
-  begin
-    StreamTokenizer.Next;
-    CurrentTokenFound(htSymbol);
-  end;
-end;
 
 end.

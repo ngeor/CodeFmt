@@ -16,8 +16,6 @@ implementation
 
 uses Types, TokenTypes, Tokenizers, Recognizers, Parsers, ParseResult, TokenParsers, CodeFmtParsers;
 
-// TODO reduce duplication between CppLexer and EditorConfigLexer
-
 (* Recognizers *)
 
 const
@@ -36,7 +34,7 @@ const
     'unsigned', 'virtual', 'void', 'volatile', 'while');
 
 type
-  TTokenType = (ttEol, ttWhiteSpace, ttDigits, ttPound, ttQuote, ttDoubleSlash, ttKeyword, ttIdentifier, ttUnknown);
+  TTokenType = (ttEol, ttWhiteSpace, ttDigits, ttPound, ttDoubleQuote, ttDoubleSlash, ttKeyword, ttIdentifier, ttUnknown);
   TTokenTypeSet = set of TTokenType;
 const
   AllTokenTypes: TTokenTypeSet = [ttEol..ttUnknown];
@@ -48,9 +46,9 @@ begin
     ttWhiteSpace: Result := TPredicateRecognizer.Create(IsWhiteSpace);
     ttDigits: Result := TPredicateRecognizer.Create(IsDigit);
     ttPound: Result := TSingleCharRecognizer.Create('#');
-    ttQuote: Result := TSingleCharRecognizer.Create('"');
+    ttDoubleQuote: Result := TSingleCharRecognizer.Create('"');
     ttDoubleSlash: Result := TStringRecognizer.Create('//');
-    ttKeyword: Result := TKeywordRecognizer.Create(CppKeyWords);
+    ttKeyword: Result := TKeywordRecognizer.Create(CppKeyWords, csSensitive);
     ttIdentifier: Result := IdentifierRecognizer;
     ttUnknown: Result := TAnyRecognizer.Create;
     else raise Exception.Create('Unknown token type')
@@ -127,8 +125,8 @@ end;
 function StringParser: TParser<TTokenLinkedList>;
 begin
   Result := Seq(
-    Seq(FilterToken(ttQuote), ManyTokens(FilterTokens(AllTokenTypes - [ttEol, ttQuote]))),
-    FilterToken(ttQuote)
+    Seq(FilterToken(ttDoubleQuote), ManyTokens(FilterTokens(AllTokenTypes - [ttEol, ttDoubleQuote]))),
+    FilterToken(ttDoubleQuote)
   );
 end;
 
