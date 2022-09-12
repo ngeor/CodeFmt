@@ -41,7 +41,7 @@
         <PackageName Value="LCL"/>
       </Item2>
     </RequiredPackages>
-    <Units Count="21">
+    <Units Count="22">
       <Unit0>
         <Filename Value="CodeFmt.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -140,6 +140,11 @@
         <IsPartOfProject Value="True"/>
         <UnitName Value="TokenParsers"/>
       </Unit20>
+      <Unit21>
+        <Filename Value="codefmtparsers.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="CodeFmtParsers"/>
+      </Unit21>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

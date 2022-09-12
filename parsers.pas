@@ -54,6 +54,8 @@ type
     function Parse(Source: TUndoTokenizer): TParseResult<U>; override;
   end;
 
+function OrElse<T>(Left: TParser<T>; Right: TParser<T>): TParser<T>;
+
 implementation
 
 uses BinaryParsers; // not circular reference as long as it's in the implementation
@@ -61,6 +63,17 @@ uses BinaryParsers; // not circular reference as long as it's in the implementat
 function TParser<T>.OrElse(Next: TParser<T>): TParser<T>;
 begin
   Result := TOrParser<T>.Create(Self, Next);
+end;
+
+function OrElse<T>(Left: TParser<T>; Right: TParser<T>): TParser<T>;
+begin
+  if Assigned(Left) then
+    if Assigned(Right) then
+      Result := Left.OrElse(Right)
+    else
+      Result := Left
+  else
+    Result := Right
 end;
 
 (* Filter *)

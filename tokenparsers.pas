@@ -5,7 +5,7 @@ unit TokenParsers;
 interface
 
 uses
-  Classes, SysUtils, Parsers, ParseResult, BinaryParsers, Tokenizers;
+  Classes, SysUtils, Types, Parsers, ParseResult, BinaryParsers, Tokenizers;
 
 function Seq(Left: TParser<TTokenLinkedList>; Right: TParser<TTokenLinkedList>): TParser<TTokenLinkedList>; overload;
 function Seq(Left: TParser<TToken>; Right: TParser<TTokenLinkedList>): TParser<TTokenLinkedList>; overload;
@@ -16,6 +16,17 @@ type
   public
     function Parse(Source: TUndoTokenizer): TParseResult<TToken>; override;
     procedure Undo(Source: TUndoTokenizer; Data: TToken); override;
+  end;
+
+type
+  TTokenTypeFilterParser = class(TFilterParser<TToken>)
+  private
+    FTokenTypes: TByteDynArray;
+  protected
+    function Filter(Data: TToken): Boolean; override;
+  public
+    constructor Create(Parser: TParser<TToken>; TokenType: Byte); overload;
+    constructor Create(Parser: TParser<TToken>; TokenTypes: TByteDynArray); overload;
   end;
 
 type
@@ -42,7 +53,6 @@ type
   end;
 
 implementation
-
 
 function Seq(Left: TParser<TTokenLinkedList>; Right: TParser<TTokenLinkedList>): TParser<TTokenLinkedList>; overload;
 begin
@@ -75,6 +85,30 @@ end;
 procedure TAnyTokenParser.Undo(Source: TUndoTokenizer; Data: TToken);
 begin
   Source.Undo(Data);
+end;
+
+(* TokenType Filter *)
+
+constructor TTokenTypeFilterParser.Create(Parser: TParser<TToken>; TokenType: Byte);
+begin
+  inherited Create(Parser);
+  FTokenTypes := [TokenType];
+end;
+
+constructor TTokenTypeFilterParser.Create(Parser: TParser<TToken>; TokenTypes: TByteDynArray);
+begin
+  inherited Create(Parser);
+  FTokenTypes := TokenTypes;
+end;
+
+function TTokenTypeFilterParser.Filter(Data: TToken): Boolean;
+var
+  i: Integer;
+begin
+  i := Low(FTokenTypes);
+  while (i <= High(FTokenTypes)) and (Data.Kind <> FTokenTypes[i]) do
+    Inc(i);
+  Result := i <= High(FTokenTypes);
 end;
 
 (* MapTokenToTokenList *)
