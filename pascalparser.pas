@@ -51,8 +51,9 @@ type
     ttKeyword,
     ttIdentifier,
     ttUnknown
-  );
+    );
   TTokenTypeSet = set of TTokenType;
+
 const
   AllTokenTypes: TTokenTypeSet = [ttEol..ttUnknown];
 
@@ -84,12 +85,14 @@ begin
     ttAnsiCommentEnd: Result := TStringRecognizer.Create('*)');
     ttBraceOpen: Result := TSingleCharRecognizer.Create('{');
     ttBraceClose: Result := TSingleCharRecognizer.Create('}');
-    ttHexNumber: Result := TLeadingPredicateRecognizer.Create(IsDollarSign, IsHexDigit, 1);
+    ttHexNumber: Result := TLeadingPredicateRecognizer.Create(IsDollarSign,
+        IsHexDigit, 1);
     ttChar: Result := TLeadingPredicateRecognizer.Create(IsPound, IsDigit);
     ttKeyword: Result := TKeywordRecognizer.Create(PasKeyWords, csInsensitive);
     ttIdentifier: Result := IdentifierRecognizer;
     ttUnknown: Result := TAnyRecognizer.Create;
-    else raise Exception.Create('Unknown token type')
+    else
+      raise Exception.Create('Unknown token type')
   end;
 end;
 
@@ -128,33 +131,19 @@ end;
 
 (* Simple Parser maps tokens almost as-is from one enum to another *)
 
-function SimpleParser(TokenType: TTokenType; HigherTokenType: THigherTokenType): TParser<TFmt>; overload;
+function SimpleParser(TokenType: TTokenType;
+  HigherTokenType: THigherTokenType): TParser<TFmt>; overload;
 begin
-  Result := TListToFmtMapper.Create(MapTokenToList(FilterToken(TokenType)), HigherTokenType);
+  Result := TListToFmtMapper.Create(MapTokenToList(FilterToken(TokenType)),
+    HigherTokenType);
 end;
 
 function SimpleParser: TParser<TFmt>; overload;
 var
-  SourceTokens: array of TTokenType = [
-    ttEol,
-    ttWhiteSpace,
-    ttDigits,
-    ttHexNumber,
-    ttChar,
-    ttKeyword,
-    ttIdentifier,
-    ttUnknown
-  ];
-  DestTokens: array of THigherTokenType = [
-    htCRLF,
-    htSpace,
-    htNumber,
-    htNumber,
-    htString,
-    htKeyword,
-    htIdentifier,
-    htUnknown
-  ];
+  SourceTokens: array of TTokenType = [ttEol, ttWhiteSpace,
+  ttDigits, ttHexNumber, ttChar, ttKeyword, ttIdentifier, ttUnknown];
+  DestTokens: array of THigherTokenType = [htCRLF, htSpace,
+  htNumber, htNumber, htString, htKeyword, htIdentifier, htUnknown];
   i: Integer;
 begin
   Result := nil;
@@ -180,36 +169,27 @@ end;
 
 function StringParser: TParser<TTokenLinkedList>;
 begin
-  Result := Seq(
-    Seq(FilterToken(ttSingleQuote), ManyTokens(FilterTokens(AllTokenTypes - [ttEol, ttSingleQuote]))),
-    FilterToken(ttSingleQuote)
-  );
+  Result := Seq(Seq(FilterToken(ttSingleQuote),
+    ManyTokens(FilterTokens(AllTokenTypes - [ttEol, ttSingleQuote]))),
+    FilterToken(ttSingleQuote));
 end;
 
 // Ansi Comments
 
 function AnsiCommentsParser: TParser<TTokenLinkedList>;
 begin
-  Result := Seq(
-    Seq(
-      FilterToken(ttAnsiCommentBegin),
-      ManyTokens(FilterTokens(AllTokenTypes - [ttAnsiCommentEnd]))
-    ),
-    FilterToken(ttAnsiCommentEnd)
-  );
+  Result := Seq(Seq(FilterToken(ttAnsiCommentBegin),
+    ManyTokens(FilterTokens(AllTokenTypes - [ttAnsiCommentEnd]))),
+    FilterToken(ttAnsiCommentEnd));
 end;
 
 // Borland Comments
 
 function BorlandCommentsParser: TParser<TTokenLinkedList>;
 begin
-  Result := Seq(
-    Seq(
-      FilterToken(ttBraceOpen),
-      ManyTokens(FilterTokens(AllTokenTypes - [ttBraceClose]))
-    ),
-    FilterToken(ttBraceClose)
-  );
+  Result := Seq(Seq(FilterToken(ttBraceOpen),
+    ManyTokens(FilterTokens(AllTokenTypes - [ttBraceClose]))),
+    FilterToken(ttBraceClose));
 end;
 
 function CreateParser: TParser<TFmt>;

@@ -37,6 +37,7 @@ type
   end;
 
   PTokenNode = ^TTokenNode;
+
   TTokenNode = record
     Data: TToken;
     Next: PTokenNode;
@@ -66,7 +67,8 @@ type
     procedure Undo(var TokenList: TTokenLinkedList); overload;
   end;
 
-function CreateUndoTokenizer(Stream: TStream; Recognizers: TTokenRecognizers): TUndoTokenizer;
+function CreateUndoTokenizer(Stream: TStream;
+  Recognizers: TTokenRecognizers): TUndoTokenizer;
 
 implementation
 
@@ -107,7 +109,8 @@ begin
   Result := FResponses[Index];
 end;
 
-procedure TRecognizerResponses.SetLastResponse(Index: Integer; Recognition: TRecognition);
+procedure TRecognizerResponses.SetLastResponse(Index: Integer;
+  Recognition: TRecognition);
 begin
   FResponses[Index] := Recognition;
 end;
@@ -119,13 +122,15 @@ var
 begin
   sum := 0;
   for i := 0 to Length(FResponses) - 1 do
-    if FResponses[i] = Recognition then Inc(sum);
+    if FResponses[i] = Recognition then
+      Inc(sum);
   Result := sum;
 end;
 
 (* Tokenizer *)
 
-constructor TTokenizer.Create(Reader: TPushBackCharReader; Recognizers: TTokenRecognizers);
+constructor TTokenizer.Create(Reader: TPushBackCharReader;
+  Recognizers: TTokenRecognizers);
 begin
   FReader := Reader;
   FRecognizers := Recognizers;
@@ -190,12 +195,13 @@ begin
           begin
             // this recognizer got disqualified without ever reaching the goal
             Sizes[i] := 0;
-          end
-        end
+          end;
+        end;
       end;
 
       // exit loop if everyone is done
-      NoMatchOrEof := RecognizerResponses.CountByRecognition(rNegative) = Length(FRecognizers);
+      NoMatchOrEof := RecognizerResponses.CountByRecognition(rNegative) =
+        Length(FRecognizers);
     end
     else
     begin
@@ -218,7 +224,8 @@ begin
   end;
 
   // unread any extra characters back into the reader
-  while Length(Buffer) > MaxPositiveSize do begin
+  while Length(Buffer) > MaxPositiveSize do
+  begin
     FReader.UnRead(Buffer[Length(Buffer)]);
     // delete last character
     Delete(Buffer, Length(Buffer), 1);
@@ -238,12 +245,12 @@ begin
       begin
         // was it preceded by a \r (#13)?
         if (i > 1) and (Buffer[i - 1] = #13) then
-          // do nothing, this is a \r\n, already moved position
+        // do nothing, this is a \r\n, already moved position
         else
-          IncRow(FRowCol)
+          IncRow(FRowCol);
       end
       else
-        IncCol(FRowCol)
+        IncCol(FRowCol);
     end;
     Result.Position.Finish := FRowCol;
   end;
@@ -269,7 +276,7 @@ begin
   if FBuffer.IsEmpty then
     Result := FTokenizer.Read
   else
-    Result := FBuffer.Pop
+    Result := FBuffer.Pop;
 end;
 
 procedure TUndoTokenizer.Undo(Token: TToken);
@@ -320,7 +327,7 @@ begin
     temp := FHead;
     FHead := FHead^.Next;
     Dispose(temp);
-  end
+  end;
 end;
 
 procedure TTokenLinkedList.Push(Token: TToken);
@@ -346,14 +353,14 @@ begin
     List.FHead := nil;
   end
   else
-    raise Exception.Create('Cannot append to empty list')
+    raise Exception.Create('Cannot append to empty list');
 end;
 
-function CreateUndoTokenizer(Stream: TStream; Recognizers: TTokenRecognizers): TUndoTokenizer;
+function CreateUndoTokenizer(Stream: TStream;
+  Recognizers: TTokenRecognizers): TUndoTokenizer;
 begin
   Result := TUndoTokenizer.Create(
-    TTokenizer.Create(CreatePushBackCharReader(Stream), Recognizers)
-  );
+    TTokenizer.Create(CreatePushBackCharReader(Stream), Recognizers));
 end;
 
 end.

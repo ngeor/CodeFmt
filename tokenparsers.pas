@@ -41,16 +41,21 @@ type
     procedure Undo(Source: TUndoTokenizer; Data: TTokenLinkedList); override;
   end;
 
-  TAndTokenListsParser = class(TAbstractAndParser<TTokenLinkedList, TTokenLinkedList, TTokenLinkedList>)
+  TAndTokenListsParser = class(TAbstractAndParser<TTokenLinkedList,
+    TTokenLinkedList, TTokenLinkedList>)
   protected
-    function Combine(Left: TTokenLinkedList; Right: TTokenLinkedList): TTokenLinkedList; override;
+    function Combine(Left: TTokenLinkedList; Right: TTokenLinkedList): TTokenLinkedList;
+      override;
   public
     procedure Undo(Source: TUndoTokenizer; Data: TTokenLinkedList); override;
   end;
 
-function Seq(Left: TParser<TTokenLinkedList>; Right: TParser<TTokenLinkedList>): TParser<TTokenLinkedList>; overload;
-function Seq(Left: TParser<TToken>; Right: TParser<TTokenLinkedList>): TParser<TTokenLinkedList>; overload;
-function Seq(Left: TParser<TTokenLinkedList>; Right: TParser<TToken>): TParser<TTokenLinkedList>; overload;
+function Seq(Left: TParser<TTokenLinkedList>;
+  Right: TParser<TTokenLinkedList>): TParser<TTokenLinkedList>; overload;
+function Seq(Left: TParser<TToken>;
+  Right: TParser<TTokenLinkedList>): TParser<TTokenLinkedList>; overload;
+function Seq(Left: TParser<TTokenLinkedList>;
+  Right: TParser<TToken>): TParser<TTokenLinkedList>; overload;
 
 function FilterTokenType(TokenType: Byte): TParser<TToken>; overload;
 function FilterTokenTypes(TokenTypes: TByteDynArray): TParser<TToken>; overload;
@@ -61,17 +66,20 @@ function ManyTokens(Parser: TParser<TToken>): TParser<TTokenLinkedList>; overloa
 
 implementation
 
-function Seq(Left: TParser<TTokenLinkedList>; Right: TParser<TTokenLinkedList>): TParser<TTokenLinkedList>; overload;
+function Seq(Left: TParser<TTokenLinkedList>;
+  Right: TParser<TTokenLinkedList>): TParser<TTokenLinkedList>; overload;
 begin
   Result := TAndTokenListsParser.Create(Left, Right);
 end;
 
-function Seq(Left: TParser<TToken>; Right: TParser<TTokenLinkedList>): TParser<TTokenLinkedList>; overload;
+function Seq(Left: TParser<TToken>;
+  Right: TParser<TTokenLinkedList>): TParser<TTokenLinkedList>; overload;
 begin
   Result := Seq(MapTokenToList(Left), Right);
 end;
 
-function Seq(Left: TParser<TTokenLinkedList>; Right: TParser<TToken>): TParser<TTokenLinkedList>; overload;
+function Seq(Left: TParser<TTokenLinkedList>;
+  Right: TParser<TToken>): TParser<TTokenLinkedList>; overload;
 begin
   Result := Seq(Left, MapTokenToList(Right));
 end;
@@ -106,7 +114,7 @@ begin
   if Next.Kind >= 0 then
     Result := SuccessParseResult<TToken>(Next)
   else
-    Result := FailedParseResult<TToken>()
+    Result := FailedParseResult<TToken>();
 end;
 
 procedure TAnyTokenParser.Undo(Source: TUndoTokenizer; Data: TToken);
@@ -122,7 +130,8 @@ begin
   FTokenTypes := [TokenType];
 end;
 
-constructor TTokenTypeFilterParser.Create(Parser: TParser<TToken>; TokenTypes: TByteDynArray);
+constructor TTokenTypeFilterParser.Create(Parser: TParser<TToken>;
+  TokenTypes: TByteDynArray);
 begin
   inherited Create(Parser);
   FTokenTypes := TokenTypes;
@@ -146,7 +155,8 @@ begin
   Result.Push(Token);
 end;
 
-procedure TMapTokenToTokenListParser.Undo(Source: TUndoTokenizer; Data: TTokenLinkedList);
+procedure TMapTokenToTokenListParser.Undo(Source: TUndoTokenizer;
+  Data: TTokenLinkedList);
 begin
   while not Data.IsEmpty do
     FParser.Undo(Source, Data.Pop);
@@ -172,7 +182,8 @@ end;
 
 (* AndTokenLists *)
 
-function TAndTokenListsParser.Combine(Left: TTokenLinkedList; Right: TTokenLinkedList): TTokenLinkedList;
+function TAndTokenListsParser.Combine(Left: TTokenLinkedList;
+  Right: TTokenLinkedList): TTokenLinkedList;
 begin
   if Right.IsEmpty then
   begin
@@ -184,7 +195,7 @@ begin
     Right.Append(Left);
     Left.Free;
     Result := Right;
-  end
+  end;
 end;
 
 procedure TAndTokenListsParser.Undo(Source: TUndoTokenizer; Data: TTokenLinkedList);

@@ -73,7 +73,7 @@ begin
     else
       Result := Left
   else
-    Result := Right
+    Result := Right;
 end;
 
 (* Filter *)
@@ -102,10 +102,10 @@ begin
     begin
       Undo(Source, Next.Data);
       Result := FailedParseResult<T>();
-    end
+    end;
   end
   else
-    Result := Next
+    Result := Next;
 end;
 
 procedure TFilterParser<T>.Undo(Source: TUndoTokenizer; Data: T);
@@ -161,7 +161,7 @@ begin
   if Next.Success then
     Result := SuccessParseResult<U>(Map(Next.Data))
   else
-    Result := FailedParseResult<U>()
+    Result := FailedParseResult<U>();
 end;
 
 end.

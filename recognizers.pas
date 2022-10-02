@@ -33,8 +33,10 @@ type
     FRemainingPredicate: TCharPredicate;
     FPartialLength: Word;
   public
-    constructor Create(LeadingPredicate: TCharPredicate; RemainingPredicate: TCharPredicate); overload;
-    constructor Create(LeadingPredicate: TCharPredicate; RemainingPredicate: TCharPredicate; PartialLength: Word); overload;
+    constructor Create(LeadingPredicate: TCharPredicate;
+      RemainingPredicate: TCharPredicate); overload;
+    constructor Create(LeadingPredicate: TCharPredicate;
+      RemainingPredicate: TCharPredicate; PartialLength: Word); overload;
     function Recognize(Buffer: String): TRecognition; override;
   end;
 
@@ -65,12 +67,14 @@ type
   end;
 
   TKeywordCaseSensitivity = (csSensitive, csInsensitive);
+
   TKeywordRecognizer = class(TTokenRecognizer)
   private
     FKeywords: TStringList;
     FCaseSensitivity: TKeywordCaseSensitivity;
   public
-    constructor Create(Keywords: array of String; CaseSensitivity: TKeywordCaseSensitivity);
+    constructor Create(Keywords: array of String;
+      CaseSensitivity: TKeywordCaseSensitivity);
     destructor Destroy; override;
     function Recognize(Buffer: String): TRecognition; override;
   end;
@@ -101,7 +105,7 @@ begin
   if Flag then
     Result := rPositive
   else
-    Result := rNegative
+    Result := rNegative;
 end;
 
 (* Predicate *)
@@ -123,14 +127,16 @@ end;
 
 (* LeadingPredicate *)
 
-constructor TLeadingPredicateRecognizer.Create(LeadingPredicate: TCharPredicate; RemainingPredicate: TCharPredicate);
+constructor TLeadingPredicateRecognizer.Create(LeadingPredicate: TCharPredicate;
+  RemainingPredicate: TCharPredicate);
 begin
   FLeadingPredicate := LeadingPredicate;
   FRemainingPredicate := RemainingPredicate;
   FPartialLength := 0;
 end;
 
-constructor TLeadingPredicateRecognizer.Create(LeadingPredicate: TCharPredicate; RemainingPredicate: TCharPredicate; PartialLength: Word);
+constructor TLeadingPredicateRecognizer.Create(LeadingPredicate: TCharPredicate;
+  RemainingPredicate: TCharPredicate; PartialLength: Word);
 begin
   FLeadingPredicate := LeadingPredicate;
   FRemainingPredicate := RemainingPredicate;
@@ -142,21 +148,18 @@ var
   i: Integer;
 begin
   i := 1;
-  while (i <= Length(Buffer)) and (
-    ((i = 1) and FLeadingPredicate(Buffer[i]))
-    or
-    ((i > 1) and FRemainingPredicate(Buffer[i]))
-  ) do
+  while (i <= Length(Buffer)) and (((i = 1) and FLeadingPredicate(Buffer[i])) or
+      ((i > 1) and FRemainingPredicate(Buffer[i]))) do
     Inc(i);
   if i > Length(Buffer) then
   begin
     if Length(Buffer) > FPartialLength then
       Result := rPositive
     else
-      Result := rPartial
+      Result := rPartial;
   end
   else
-    Result := rNegative
+    Result := rNegative;
 end;
 
 (* Any *)
@@ -170,11 +173,9 @@ end;
 (* New Line *)
 function TNewLineRecognizer.Recognize(Buffer: String): TRecognition;
 begin
-  Result := PositiveOrNegative((
-    ( (Length(Buffer) = 1) and (Buffer[1] in [#10, #13]) )
-    or
-    ( Buffer = #13#10 )
-  ));
+  Result := PositiveOrNegative(
+    (((Length(Buffer) = 1) and (Buffer[1] in [#10, #13])) or
+    (Buffer = #13#10)));
 end;
 
 (* Single Char *)
@@ -186,7 +187,8 @@ end;
 
 function TSingleCharRecognizer.Recognize(Buffer: String): TRecognition;
 begin
-  Result := PositiveOrNegative( (Length(Buffer) = 1) and (Pos(Buffer[1], FAllowedChars) > 0) );
+  Result := PositiveOrNegative((Length(Buffer) = 1) and
+    (Pos(Buffer[1], FAllowedChars) > 0));
 end;
 
 (* Specific String *)
@@ -210,7 +212,7 @@ begin
     if i > Length(FValue) then
       Result := rPositive
     else
-      Result := rPartial
+      Result := rPartial;
   end
   else
     Result := rNegative;
@@ -218,7 +220,8 @@ end;
 
 (* Keywords *)
 
-constructor TKeywordRecognizer.Create(Keywords: array of String; CaseSensitivity: TKeywordCaseSensitivity);
+constructor TKeywordRecognizer.Create(Keywords: array of String;
+  CaseSensitivity: TKeywordCaseSensitivity);
 var
   Keyword: String;
 begin
@@ -229,7 +232,7 @@ begin
     if FCaseSensitivity = csSensitive then
       FKeywords.Add(Keyword)
     else
-      FKeywords.Add(UpCase(Keyword))
+      FKeywords.Add(UpCase(Keyword));
 end;
 
 destructor TKeywordRecognizer.Destroy;
@@ -258,8 +261,8 @@ begin
     if Index < FKeywords.Count then
       Result := rPartial
     else
-      Result := rNegative
-  end
+      Result := rNegative;
+  end;
 end;
 
 end.

@@ -35,7 +35,8 @@ end;
 
 (* TListToFmtMapper *)
 
-constructor TListToFmtMapper.Create(Parser: TParser<TTokenLinkedList>; Kind: THigherTokenType);
+constructor TListToFmtMapper.Create(Parser: TParser<TTokenLinkedList>;
+  Kind: THigherTokenType);
 begin
   inherited Create(Parser);
   FKind := Kind;
