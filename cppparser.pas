@@ -32,8 +32,10 @@ const
     'unsigned', 'virtual', 'void', 'volatile', 'while');
 
 type
-  TTokenType = (ttEol, ttWhiteSpace, ttDigits, ttPound, ttDoubleQuote, ttDoubleSlash, ttKeyword, ttIdentifier, ttUnknown);
+  TTokenType = (ttEol, ttWhiteSpace, ttDigits, ttPound, ttDoubleQuote,
+    ttDoubleSlash, ttKeyword, ttIdentifier, ttUnknown);
   TTokenTypeSet = set of TTokenType;
+
 const
   AllTokenTypes: TTokenTypeSet = [ttEol..ttUnknown];
 
@@ -49,7 +51,8 @@ begin
     ttKeyword: Result := TKeywordRecognizer.Create(CppKeyWords, csSensitive);
     ttIdentifier: Result := IdentifierRecognizer;
     ttUnknown: Result := TAnyRecognizer.Create;
-    else raise Exception.Create('Unknown token type')
+    else
+      raise Exception.Create('Unknown token type')
   end;
 end;
 
@@ -88,15 +91,19 @@ end;
 
 (* Simple Parser maps tokens almost as-is from one enum to another *)
 
-function SimpleParser(TokenType: TTokenType; HigherTokenType: THigherTokenType): TParser<TFmt>; overload;
+function SimpleParser(TokenType: TTokenType;
+  HigherTokenType: THigherTokenType): TParser<TFmt>; overload;
 begin
-  Result := TListToFmtMapper.Create(MapTokenToList(FilterToken(TokenType)), HigherTokenType);
+  Result := TListToFmtMapper.Create(MapTokenToList(FilterToken(TokenType)),
+    HigherTokenType);
 end;
 
 function SimpleParser: TParser<TFmt>; overload;
 var
-  SourceTokens: array of TTokenType = [ttEol, ttWhiteSpace, ttDigits, ttKeyword, ttIdentifier, ttUnknown];
-  DestTokens: array of THigherTokenType = [htCRLF, htSpace, htNumber, htKeyword, htIdentifier, htUnknown];
+  SourceTokens: array of TTokenType = [ttEol, ttWhiteSpace, ttDigits,
+  ttKeyword, ttIdentifier, ttUnknown];
+  DestTokens: array of THigherTokenType = [htCRLF, htSpace, htNumber,
+  htKeyword, htIdentifier, htUnknown];
   i: Integer;
 begin
   Result := nil;
@@ -122,17 +129,17 @@ end;
 
 function StringParser: TParser<TTokenLinkedList>;
 begin
-  Result := Seq(
-    Seq(FilterToken(ttDoubleQuote), ManyTokens(FilterTokens(AllTokenTypes - [ttEol, ttDoubleQuote]))),
-    FilterToken(ttDoubleQuote)
-  );
+  Result := Seq(Seq(FilterToken(ttDoubleQuote),
+    ManyTokens(FilterTokens(AllTokenTypes - [ttEol, ttDoubleQuote]))),
+    FilterToken(ttDoubleQuote));
 end;
 
 // Pre-processor directive
 
 function PreProcessorDirective: TParser<TTokenLinkedList>;
 begin
-  Result := Seq(FilterToken(ttPound), ManyTokens(FilterTokens([ttIdentifier, ttKeyword])));
+  Result := Seq(FilterToken(ttPound),
+    ManyTokens(FilterTokens([ttIdentifier, ttKeyword])));
 end;
 
 function CreateParser: TParser<TFmt>;

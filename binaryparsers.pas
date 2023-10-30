@@ -82,10 +82,10 @@ begin
     begin
       FLeft.Undo(Source, Left.Data);
       Result := FailedParseResult<T>();
-    end
+    end;
   end
   else
-    Result := FailedParseResult<T>()
+    Result := FailedParseResult<T>();
 end;
 
 (* And *)

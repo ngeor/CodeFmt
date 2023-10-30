@@ -14,12 +14,14 @@ type
   public
     procedure WriteFooter; override;
     procedure WriteHeader; override;
-    procedure WriteToken(const Token: String; const TokenType: THigherTokenType); override;
+    procedure WriteToken(const Token: String; const TokenType: THigherTokenType);
+      override;
   end;
 
 implementation
 
-procedure THTMLFormatter.WriteToken(const Token: String; const TokenType: THigherTokenType);
+procedure THTMLFormatter.WriteToken(const Token: String;
+  const TokenType: THigherTokenType);
 var
   escapedToken, FormatToken: String;
 begin

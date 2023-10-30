@@ -19,7 +19,7 @@ type
     htString,
     htSymbol,
     htUnknown
-  );
+    );
 
   TFmt = record
     Text: String;

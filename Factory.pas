@@ -25,7 +25,8 @@ implementation
 
 uses
   PascalParser, CppParser, EditorConfigParser,
-  FormatterBase, RTFFormatter, HTMLFormatter, Recognizers, TokenTypes, Parsers, ParseResult, Tokenizers;
+  FormatterBase, RTFFormatter, HTMLFormatter, Recognizers, TokenTypes,
+  Parsers, ParseResult, Tokenizers;
 
 function CreateFormatter(FormatterType: TFormatterType;
   OutputStream: TStream): TFormatterBase;
@@ -46,7 +47,8 @@ begin
     dtCpp: Result := CppParser.CreateRecognizers;
     dtPascal: Result := PascalParser.CreateRecognizers;
     dtEditorConfig: Result := EditorConfigParser.CreateRecognizers;
-    else raise Exception.Create('Not implemented!')
+    else
+      raise Exception.Create('Not implemented!')
   end;
 end;
 
@@ -56,7 +58,8 @@ begin
     dtCpp: Result := CppParser.CreateParser;
     dtPascal: Result := PascalParser.CreateParser;
     dtEditorConfig: Result := EditorConfigParser.CreateParser;
-    else raise Exception.Create('Not implemented!')
+    else
+      raise Exception.Create('Not implemented!')
   end;
 end;
 
